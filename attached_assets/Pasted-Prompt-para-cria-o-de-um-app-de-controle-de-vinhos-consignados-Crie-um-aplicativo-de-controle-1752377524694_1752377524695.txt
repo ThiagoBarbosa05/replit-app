@@ -1,0 +1,66 @@
+Prompt para criação de um app de controle de vinhos consignados:
+
+**Crie um aplicativo de controle de vendas de vinhos consignados.**
+
+O aplicativo deve conter os seguintes módulos e funcionalidades principais:
+
+ 1. **Cadastro de Produtos (Vinhos)**
+
+O sistema precisa permitir o cadastro completo dos vinhos consignados com os seguintes campos:
+
+* Nome do vinho
+* País de origem
+* Tipo de vinho (tinto, branco, rosé, espumante, etc.)
+* Valor unitário
+
+2. **Cadastro de Clientes**
+
+Os clientes são os estabelecimentos que recebem os vinhos em consignação. Cada cliente deve conter os seguintes dados:
+
+* Nome do cliente (empresa)
+* CNPJ
+* Endereço completo
+* Telefone
+* Nome do responsável (pessoa de contato)
+
+3. **Controle de Entradas (Consignação de Produtos)**
+
+Crie uma funcionalidade para registrar o envio de vinhos em consignação para cada cliente. Deve ser possível:
+
+* Selecionar o cliente
+* Selecionar os produtos (vinhos) enviados
+* Quantidade de cada vinho
+* Data da consignação
+
+4. **Contagem de Estoque no Cliente (Retorno de Vendas)**
+
+Permitir a contagem de estoque no ponto de venda, para cálculo de:
+
+* Quantidade vendida (baseado na diferença entre o que foi enviado e o que está no local)
+* Valor total vendido
+* Valor total do estoque restante
+
+5. **Relatórios e Resultados**
+
+Gerar relatórios por cliente, por produto ou por período:
+
+* Relatório de vendas por cliente
+* Relatório de estoque atual em cada cliente
+* Histórico de consignações
+* Lucro obtido (venda vs. valor unitário)
+
+6. **Outras Funcionalidades Desejadas**
+
+* Login de usuário (opcional, para segurança)
+* Backup dos dados (Google Drive ou exportar em Excel/CSV)
+* Notificações para contagem de estoque pendente ou estoque abaixo do esperado
+* Dashboard com resumo de vinhos consignados, vendidos e lucro
+
+Layout sugerido:
+
+* Tela inicial: visão geral com estatísticas
+* Aba "Clientes"
+* Aba "Produtos"
+* Aba "Consignações"
+* Aba "Contagem / Retorno"
+* Aba "Relatórios"
