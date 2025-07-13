@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import StockCountForm from "@/components/forms/stock-count-form";
+import { MultipleStockCountForm } from "@/components/forms/stock-count-form";
 import type { InsertStockCount } from "@shared/schema";
 
 interface StockCountDialogProps {
@@ -16,17 +16,20 @@ export default function StockCountDialog({ open, onOpenChange, onClose }: StockC
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertStockCount) => {
-      const response = await apiRequest("POST", "/api/stock-counts", data);
-      return response.json();
+    mutationFn: async (data: InsertStockCount[]) => {
+      // Process multiple stock counts
+      const promises = data.map(item => 
+        apiRequest("POST", "/api/stock-counts", item).then(response => response.json())
+      );
+      return Promise.all(promises);
     },
-    onSuccess: () => {
+    onSuccess: (results) => {
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       toast({
         title: "Sucesso",
-        description: "Contagem de estoque registrada com sucesso!",
+        description: `${results.length} contagem${results.length !== 1 ? 's' : ''} de estoque registrada${results.length !== 1 ? 's' : ''} com sucesso!`,
       });
       onClose();
     },
@@ -39,17 +42,17 @@ export default function StockCountDialog({ open, onOpenChange, onClose }: StockC
     },
   });
 
-  const handleSubmit = (data: InsertStockCount) => {
+  const handleSubmit = (data: InsertStockCount[]) => {
     createMutation.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Contagem de Estoque</DialogTitle>
         </DialogHeader>
-        <StockCountForm
+        <MultipleStockCountForm
           onSubmit={handleSubmit}
           onCancel={onClose}
           isLoading={createMutation.isPending}

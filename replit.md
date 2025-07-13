@@ -20,6 +20,14 @@ Preferred communication style: Simple, everyday language.
 - ✓ Integrated client inventory display showing sent, counted, and sold quantities
 - ✓ Fixed TypeScript errors in storage layer for better type safety
 
+### Multiple Product Stock Counting (July 13, 2025)
+- ✓ Created MultipleStockCountForm for selecting multiple products at once
+- ✓ Added checkbox selection interface for client's available wine products
+- ✓ Implemented table view for editing quantities of multiple products
+- ✓ Added real-time calculation of totals across all selected products
+- ✓ Enhanced validation with warnings for incorrect quantities
+- ✓ Updated StockCountDialog to support batch processing of multiple stock counts
+
 ## System Architecture
 
 ### Frontend Architecture

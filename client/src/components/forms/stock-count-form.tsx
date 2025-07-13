@@ -9,8 +9,26 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calculator, AlertTriangle, Package, Trash2 } from "lucide-react";
 import type { Client, InsertStockCount } from "@shared/schema";
+
+interface ProductCount {
+  productId: number;
+  productName: string;
+  productType: string;
+  quantitySent: number;
+  quantityRemaining: number;
+  unitPrice: string;
+  consignmentId: number;
+}
+
+interface MultipleStockCountFormProps {
+  onSubmit: (data: InsertStockCount[]) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
 
 interface StockCountFormProps {
   onSubmit: (data: InsertStockCount) => void;
@@ -245,5 +263,289 @@ export default function StockCountForm({ onSubmit, onCancel, isLoading }: StockC
         </Button>
       </div>
     </form>
+  );
+}
+
+export function MultipleStockCountForm({ onSubmit, onCancel, isLoading }: MultipleStockCountFormProps) {
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<ProductCount[]>([]);
+  const [countDate, setCountDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"]
+  });
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["/api/inventory", selectedClientId],
+    enabled: !!selectedClientId
+  });
+
+  const formatCurrency = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+  const handleClientChange = (clientId: string) => {
+    const id = parseInt(clientId);
+    setSelectedClientId(id);
+    setSelectedProducts([]);
+  };
+
+  const handleProductToggle = (item: any, checked: boolean) => {
+    if (checked) {
+      const newProduct: ProductCount = {
+        productId: item.product.id,
+        productName: item.product.name,
+        productType: item.product.type,
+        quantitySent: item.totalSent,
+        quantityRemaining: item.totalSent, // Default to sent quantity
+        unitPrice: item.product.unitPrice,
+        consignmentId: 1 // Simplified for now
+      };
+      setSelectedProducts(prev => [...prev, newProduct]);
+    } else {
+      setSelectedProducts(prev => prev.filter(p => p.productId !== item.product.id));
+    }
+  };
+
+  const updateProductCount = (productId: number, quantityRemaining: number) => {
+    setSelectedProducts(prev =>
+      prev.map(p =>
+        p.productId === productId
+          ? { ...p, quantityRemaining }
+          : p
+      )
+    );
+  };
+
+  const removeProduct = (productId: number) => {
+    setSelectedProducts(prev => prev.filter(p => p.productId !== productId));
+  };
+
+  const handleSubmit = () => {
+    const stockCounts: InsertStockCount[] = selectedProducts.map(product => ({
+      clientId: selectedClientId!,
+      productId: product.productId,
+      consignmentId: product.consignmentId,
+      quantitySent: product.quantitySent,
+      quantityRemaining: product.quantityRemaining,
+      unitPrice: product.unitPrice,
+      countDate: new Date(countDate)
+    }));
+
+    onSubmit(stockCounts);
+  };
+
+  const calculateTotals = () => {
+    return selectedProducts.reduce((acc, product) => {
+      const sold = product.quantitySent - product.quantityRemaining;
+      const value = sold * parseFloat(product.unitPrice);
+      
+      return {
+        totalSent: acc.totalSent + product.quantitySent,
+        totalCounted: acc.totalCounted + product.quantityRemaining,
+        totalSold: acc.totalSold + sold,
+        totalValue: acc.totalValue + value
+      };
+    }, { totalSent: 0, totalCounted: 0, totalSold: 0, totalValue: 0 });
+  };
+
+  const totals = calculateTotals();
+
+  return (
+    <div className="space-y-6">
+      {/* Client Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Package className="h-5 w-5" />
+            <span>Contagem Múltipla de Estoque</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="clientId">Cliente *</Label>
+              <Select onValueChange={handleClientChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="countDate">Data da Contagem *</Label>
+              <Input
+                id="countDate"
+                type="date"
+                value={countDate}
+                onChange={(e) => setCountDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Product Selection */}
+      {selectedClientId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Produtos Disponíveis</CardTitle>
+            <p className="text-sm text-gray-600">Selecione os produtos para contagem</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {inventory.map((item: any) => {
+                const isSelected = selectedProducts.some(p => p.productId === item.product.id);
+                
+                return (
+                  <div key={item.product.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleProductToggle(item, checked as boolean)}
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{item.product.name}</div>
+                      <div className="text-sm text-gray-600">
+                        <Badge variant="outline" className="mr-2">{item.product.type}</Badge>
+                        {item.totalSent} enviadas • {formatCurrency(item.product.unitPrice)} cada
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Selected Products Table */}
+      {selectedProducts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Produtos Selecionados para Contagem</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Enviado</TableHead>
+                  <TableHead>Contado</TableHead>
+                  <TableHead>Vendido</TableHead>
+                  <TableHead>Valor Unit.</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedProducts.map((product) => {
+                  const sold = product.quantitySent - product.quantityRemaining;
+                  const totalValue = sold * parseFloat(product.unitPrice);
+                  
+                  return (
+                    <TableRow key={product.productId}>
+                      <TableCell className="font-medium">{product.productName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{product.productType}</Badge>
+                      </TableCell>
+                      <TableCell>{product.quantitySent}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={product.quantitySent}
+                          value={product.quantityRemaining}
+                          onChange={(e) => updateProductCount(product.productId, parseInt(e.target.value) || 0)}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <span className={sold > 0 ? "text-green-600 font-medium" : ""}>
+                          {sold}
+                        </span>
+                      </TableCell>
+                      <TableCell>{formatCurrency(product.unitPrice)}</TableCell>
+                      <TableCell>
+                        <span className={totalValue > 0 ? "text-green-600 font-medium" : ""}>
+                          {formatCurrency(totalValue)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeProduct(product.productId)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            {/* Summary */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Enviado</p>
+                  <p className="text-xl font-bold text-blue-600">{totals.totalSent}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Contado</p>
+                  <p className="text-xl font-bold text-green-600">{totals.totalCounted}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Vendido</p>
+                  <p className="text-xl font-bold text-orange-600">{totals.totalSold}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Valor Total</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(totals.totalValue)}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Validation Warnings */}
+      {selectedProducts.some(p => p.quantityRemaining > p.quantitySent) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <span className="font-medium text-red-800">
+              Atenção: Alguns produtos têm quantidade contada maior que a enviada
+            </span>
+          </div>
+          <p className="text-sm text-red-600 mt-1">
+            Verifique se as contagens estão corretas.
+          </p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isLoading || !selectedClientId || selectedProducts.length === 0}
+        >
+          {isLoading ? "Salvando..." : `Registrar ${selectedProducts.length} Contagem${selectedProducts.length !== 1 ? 's' : ''}`}
+        </Button>
+      </div>
+    </div>
   );
 }
