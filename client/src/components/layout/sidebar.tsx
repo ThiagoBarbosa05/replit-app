@@ -1,4 +1,4 @@
-import { Wine, BarChart3, Building, Truck, ClipboardList, Users } from "lucide-react";
+import { Wine, BarChart3, Building, Truck, ClipboardList, Users, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: "consignments", label: "Consignações", icon: Truck },
     { id: "inventory", label: "Contagem", icon: ClipboardList },
     { id: "reports", label: "Relatórios", icon: BarChart3 },
+    { id: "users", label: "Usuários", icon: UserCircle },
   ];
 
   return (

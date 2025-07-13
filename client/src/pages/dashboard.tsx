@@ -14,9 +14,10 @@ import ClientDialog from "@/components/dialogs/client-dialog";
 import ProductDialog from "@/components/dialogs/product-dialog";
 import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
 import StockCountDialog from "@/components/dialogs/stock-count-dialog";
-import type { DashboardStats, Client, Product, ConsignmentWithDetails, StockCount } from "@shared/schema";
+import UserDialog from "@/components/dialogs/user-dialog";
+import type { DashboardStats, Client, Product, ConsignmentWithDetails, StockCount, User } from "@shared/schema";
 
-type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "inventory" | "reports";
+type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "inventory" | "reports" | "users";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -25,9 +26,11 @@ export default function Dashboard() {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [consignmentDialogOpen, setConsignmentDialogOpen] = useState(false);
   const [stockCountDialogOpen, setStockCountDialogOpen] = useState(false);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedConsignment, setSelectedConsignment] = useState<ConsignmentWithDetails | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedClientForInventory, setSelectedClientForInventory] = useState<number | null>(null);
 
   // Queries
@@ -71,6 +74,11 @@ export default function Dashboard() {
     enabled: activeTab === "reports"
   });
 
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: activeTab === "users"
+  });
+
   const openClientDialog = (client?: Client) => {
     setSelectedClient(client || null);
     setClientDialogOpen(true);
@@ -86,14 +94,20 @@ export default function Dashboard() {
     setConsignmentDialogOpen(true);
   };
 
+  const openUserDialog = (user?: User) => {
+    setSelectedUser(user || null);
+    setUserDialogOpen(true);
+  };
+
   const getTabConfig = (tab: ActiveTab) => {
     const configs = {
-      dashboard: { title: "Dashboard", description: "Visão geral do sistema de consignações" },
-      clients: { title: "Clientes", description: "Gerenciar estabelecimentos que recebem vinhos em consignação" },
-      products: { title: "Produtos", description: "Gerenciar catálogo de vinhos para consignação" },
-      consignments: { title: "Consignações", description: "Registrar e acompanhar envios de vinhos para clientes" },
-      inventory: { title: "Contagem de Estoque", description: "Realizar contagem e calcular vendas baseadas no estoque" },
-      reports: { title: "Relatórios", description: "Gerar relatórios de vendas, estoque e desempenho" }
+      dashboard: { title: "Grand Cru Dashboard", description: "Visão geral do sistema de consignações" },
+      clients: { title: "Grand Cru - Clientes", description: "Gerenciar estabelecimentos que recebem vinhos em consignação" },
+      products: { title: "Grand Cru - Produtos", description: "Gerenciar catálogo de vinhos para consignação" },
+      consignments: { title: "Grand Cru - Consignações", description: "Registrar e acompanhar envios de vinhos para clientes" },
+      inventory: { title: "Grand Cru - Inventário", description: "Realizar contagem e calcular vendas baseadas no estoque" },
+      reports: { title: "Grand Cru - Relatórios", description: "Gerar relatórios de vendas, estoque e desempenho" },
+      users: { title: "Grand Cru - Usuários", description: "Gerenciar usuários e perfis de acesso ao sistema" }
     };
     return configs[tab];
   };
@@ -914,6 +928,96 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* Users Content */}
+          {activeTab === "users" && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle>Gerenciamento de Usuários</CardTitle>
+                    <p className="text-gray-600">Controle de acesso e perfis do sistema</p>
+                  </div>
+                  <Button onClick={() => openUserDialog()}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Usuário
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Perfil</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Último Acesso</TableHead>
+                          <TableHead>Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {usersLoading ? (
+                          Array.from({ length: 3 }).map((_, index) => (
+                            <TableRow key={index}>
+                              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                            </TableRow>
+                          ))
+                        ) : users.length > 0 ? (
+                          users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell className="font-medium">{user.name}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  user.role === "admin" ? "default" : 
+                                  user.role === "manager" ? "secondary" : 
+                                  "outline"
+                                }>
+                                  {user.role === "admin" ? "Administrador" : 
+                                   user.role === "manager" ? "Gerente" : "Usuário"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={user.isActive ? "default" : "secondary"}>
+                                  {user.isActive ? "Ativo" : "Inativo"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {user.lastLogin ? formatDate(user.lastLogin) : "Nunca"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openUserDialog(user)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                              Nenhum usuário cadastrado
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
 
@@ -950,6 +1054,15 @@ export default function Dashboard() {
         onOpenChange={setStockCountDialogOpen}
         onClose={() => {
           setStockCountDialogOpen(false);
+        }}
+      />
+      <UserDialog 
+        open={userDialogOpen} 
+        onOpenChange={setUserDialogOpen}
+        user={selectedUser}
+        onClose={() => {
+          setUserDialogOpen(false);
+          setSelectedUser(null);
         }}
       />
     </div>

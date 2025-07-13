@@ -51,6 +51,17 @@ export const stockCounts = pgTable("stock_counts", {
   totalSold: decimal("total_sold", { precision: 10, scale: 2 }).notNull(),
 });
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role").notNull().default("user"), // admin, manager, user
+  isActive: integer("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastLogin: timestamp("last_login"),
+});
+
 // Insert schemas
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -79,6 +90,12 @@ export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
   totalSold: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  lastLogin: true,
+});
+
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
@@ -94,6 +111,9 @@ export type InsertConsignmentItem = z.infer<typeof insertConsignmentItemSchema>;
 
 export type StockCount = typeof stockCounts.$inferSelect;
 export type InsertStockCount = z.infer<typeof insertStockCountSchema>;
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 // Extended types for API responses
 export type ConsignmentWithDetails = Consignment & {

@@ -4,11 +4,13 @@ import {
   Consignment, 
   ConsignmentItem, 
   StockCount,
+  User,
   InsertClient, 
   InsertProduct, 
   InsertConsignment, 
   InsertConsignmentItem, 
   InsertStockCount,
+  InsertUser,
   ConsignmentWithDetails,
   DashboardStats
 } from "@shared/schema";
@@ -51,6 +53,14 @@ export interface IStorage {
   // Inventory Management
   getClientInventory(clientId: number): Promise<any[]>;
   calculateStockDifference(clientId: number, productId: number): Promise<any>;
+
+  // Users
+  getUsers(): Promise<User[]>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +69,7 @@ export class MemStorage implements IStorage {
   private consignments: Map<number, Consignment>;
   private consignmentItems: Map<number, ConsignmentItem>;
   private stockCounts: Map<number, StockCount>;
+  private users: Map<number, User>;
   private currentId: { [key: string]: number };
 
   constructor() {
@@ -67,13 +78,40 @@ export class MemStorage implements IStorage {
     this.consignments = new Map();
     this.consignmentItems = new Map();
     this.stockCounts = new Map();
+    this.users = new Map();
     this.currentId = {
       clients: 1,
       products: 1,
       consignments: 1,
       consignmentItems: 1,
       stockCounts: 1,
+      users: 1,
     };
+
+    // Create default users
+    this.createUser({
+      name: "Administrador do Sistema",
+      email: "admin@grandcru.com",
+      password: "admin123",
+      role: "admin",
+      isActive: 1,
+    });
+
+    this.createUser({
+      name: "João Silva",
+      email: "joao@grandcru.com", 
+      password: "manager123",
+      role: "manager",
+      isActive: 1,
+    });
+
+    this.createUser({
+      name: "Maria Santos",
+      email: "maria@grandcru.com",
+      password: "user123",
+      role: "user", 
+      isActive: 1,
+    });
   }
 
   // Clients
@@ -465,6 +503,46 @@ export class MemStorage implements IStorage {
       salesValue: soldQuantity * parseFloat(product?.unitPrice || "0"),
       lastCountDate: latestCount?.countDate || null
     };
+  }
+
+  // Users
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.email === email);
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentId.users++;
+    const user: User = { 
+      ...insertUser, 
+      id,
+      isActive: insertUser.isActive || 1,
+      role: insertUser.role || "user",
+      createdAt: new Date(),
+      lastLogin: null
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
+    const existing = this.users.get(id);
+    if (!existing) throw new Error("User not found");
+    
+    const updated = { ...existing, ...userData };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
   }
 }
 

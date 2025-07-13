@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertProductSchema, insertConsignmentSchema, insertStockCountSchema } from "@shared/schema";
+import { insertClientSchema, insertProductSchema, insertConsignmentSchema, insertStockCountSchema, insertUserSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Clients
@@ -267,6 +267,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(difference);
     } catch (error) {
       res.status(500).json({ message: "Failed to calculate stock difference" });
+    }
+  });
+
+  // Users
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/users", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid user data", error });
+    }
+  });
+
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userData = insertUserSchema.partial().parse(req.body);
+      const user = await storage.updateUser(id, userData);
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update user", error });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

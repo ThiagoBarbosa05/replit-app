@@ -13,10 +13,10 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(262, 83%, 58%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(237, 84%, 64%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --primary: hsl(350, 70%, 36%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(350, 45%, 50%);
+  --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(60, 4.8%, 95.9%);
   --accent-foreground: hsl(24, 9.8%, 10%);
   --destructive: hsl(0, 84.2%, 60.2%);
@@ -38,9 +38,9 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(262, 83%, 58%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(237, 84%, 64%);
+  --primary: hsl(350, 70%, 36%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(350, 45%, 50%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(240, 3.7%, 15.9%);
   --accent-foreground: hsl(0, 0%, 98%);
@@ -87,11 +87,23 @@
   }
 
   .bg-primary\/10 {
-    background-color: hsl(262, 83%, 58%, 0.1);
+    background-color: hsl(350, 70%, 36%, 0.1);
   }
 
   .bg-secondary\/10 {
-    background-color: hsl(237, 84%, 64%, 0.1);
+    background-color: hsl(350, 45%, 50%, 0.1);
+  }
+
+  .text-bordeaux-900 {
+    color: hsl(350, 70%, 25%);
+  }
+
+  .text-bordeaux-700 {
+    color: hsl(350, 60%, 35%);
+  }
+
+  .bg-bordeaux-50 {
+    background-color: hsl(350, 70%, 95%);
   }
 
   .hover\:bg-success\/90:hover {

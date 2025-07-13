@@ -60,11 +60,26 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Verificar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Arquivo muito grande. Máximo permitido: 5MB");
+        return;
+      }
+      
+      // Verificar tipo do arquivo
+      if (!file.type.startsWith('image/')) {
+        alert("Por favor, selecione apenas arquivos de imagem");
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
         setSelectedImage(base64);
         form.setValue("photo", base64);
+      };
+      reader.onerror = () => {
+        alert("Erro ao carregar a imagem. Tente novamente.");
       };
       reader.readAsDataURL(file);
     }
@@ -244,6 +259,16 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
                             <Upload className="h-4 w-4 mr-2" />
                             Selecionar Imagem
                           </Button>
+                          {selectedImage && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="mt-2"
+                            >
+                              Alterar Imagem
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
