@@ -8,6 +8,18 @@ VinhoConsign is a comprehensive wine consignment management application built fo
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Stock Count Management Implementation (July 13, 2025)
+- ✓ Enhanced inventory management system with client-specific stock tracking
+- ✓ Added new API endpoints for client inventory and stock difference calculations
+- ✓ Created StockCountForm component with real-time stock calculation
+- ✓ Implemented StockCountDialog with product selection and validation
+- ✓ Updated Dashboard inventory tab with comprehensive stock management interface
+- ✓ Added automatic sales calculation based on sent vs remaining quantities
+- ✓ Integrated client inventory display showing sent, counted, and sold quantities
+- ✓ Fixed TypeScript errors in storage layer for better type safety
+
 ## System Architecture
 
 ### Frontend Architecture

@@ -47,6 +47,10 @@ export interface IStorage {
   getSalesByClient(startDate?: Date, endDate?: Date): Promise<any[]>;
   getSalesByProduct(startDate?: Date, endDate?: Date): Promise<any[]>;
   getCurrentStock(): Promise<any[]>;
+
+  // Inventory Management
+  getClientInventory(clientId: number): Promise<any[]>;
+  calculateStockDifference(clientId: number, productId: number): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -198,7 +202,9 @@ export class MemStorage implements IStorage {
       this.consignmentItems.set(itemId, item);
     }
 
-    return this.getConsignment(id)!;
+    const result = await this.getConsignment(id);
+    if (!result) throw new Error("Failed to create consignment");
+    return result;
   }
 
   async updateConsignment(id: number, consignmentData: Partial<InsertConsignment>): Promise<ConsignmentWithDetails> {
@@ -207,7 +213,9 @@ export class MemStorage implements IStorage {
     
     const updated = { ...existing, ...consignmentData };
     this.consignments.set(id, updated);
-    return this.getConsignment(id)!;
+    const result = await this.getConsignment(id);
+    if (!result) throw new Error("Failed to update consignment");
+    return result;
   }
 
   async deleteConsignment(id: number): Promise<boolean> {
@@ -368,6 +376,90 @@ export class MemStorage implements IStorage {
       clientCount: item.clientCount.size,
       value: item.totalRemaining * parseFloat(item.product.unitPrice)
     }));
+  }
+
+  // Inventory Management
+  async getClientInventory(clientId: number): Promise<any[]> {
+    // Get all consignment items for this client
+    const consignments = Array.from(this.consignments.values())
+      .filter(c => c.clientId === clientId);
+    
+    const inventory = new Map<number, any>();
+
+    for (const consignment of consignments) {
+      const items = Array.from(this.consignmentItems.values())
+        .filter(item => item.consignmentId === consignment.id);
+
+      for (const item of items) {
+        const product = this.products.get(item.productId);
+        if (!product) continue;
+
+        const key = item.productId;
+        const existing = inventory.get(key) || {
+          product,
+          totalSent: 0,
+          totalCounted: 0,
+          totalSold: 0,
+          lastCountDate: null,
+          consignmentDate: consignment.date
+        };
+
+        existing.totalSent += item.quantity;
+        inventory.set(key, existing);
+      }
+    }
+
+    // Add stock count information
+    const stockCounts = Array.from(this.stockCounts.values())
+      .filter(sc => sc.clientId === clientId);
+
+    for (const count of stockCounts) {
+      const existing = inventory.get(count.productId);
+      if (existing) {
+        existing.totalCounted = count.quantityRemaining;
+        existing.totalSold = count.quantitySold;
+        existing.lastCountDate = count.countDate;
+      }
+    }
+
+    return Array.from(inventory.values())
+      .sort((a, b) => a.product.name.localeCompare(b.product.name));
+  }
+
+  async calculateStockDifference(clientId: number, productId: number): Promise<any> {
+    // Get total sent for this client and product
+    const consignments = Array.from(this.consignments.values())
+      .filter(c => c.clientId === clientId);
+    
+    let totalSent = 0;
+    for (const consignment of consignments) {
+      const items = Array.from(this.consignmentItems.values())
+        .filter(item => item.consignmentId === consignment.id && item.productId === productId);
+      
+      totalSent += items.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    // Get latest stock count
+    const stockCounts = Array.from(this.stockCounts.values())
+      .filter(sc => sc.clientId === clientId && sc.productId === productId)
+      .sort((a, b) => new Date(b.countDate).getTime() - new Date(a.countDate).getTime());
+
+    const latestCount = stockCounts[0];
+    const remainingStock = latestCount ? latestCount.quantityRemaining : totalSent;
+    const soldQuantity = totalSent - remainingStock;
+
+    const product = this.products.get(productId);
+    const client = this.clients.get(clientId);
+
+    return {
+      client,
+      product,
+      totalSent,
+      remainingStock,
+      soldQuantity,
+      salesValue: soldQuantity * parseFloat(product?.unitPrice || "0"),
+      lastCountDate: latestCount?.countDate || null
+    };
   }
 }
 

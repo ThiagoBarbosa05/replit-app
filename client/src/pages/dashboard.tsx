@@ -13,6 +13,7 @@ import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, 
 import ClientDialog from "@/components/dialogs/client-dialog";
 import ProductDialog from "@/components/dialogs/product-dialog";
 import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
+import StockCountDialog from "@/components/dialogs/stock-count-dialog";
 import type { DashboardStats, Client, Product, ConsignmentWithDetails, StockCount } from "@shared/schema";
 
 type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "inventory" | "reports";
@@ -22,9 +23,11 @@ export default function Dashboard() {
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [consignmentDialogOpen, setConsignmentDialogOpen] = useState(false);
+  const [stockCountDialogOpen, setStockCountDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedConsignment, setSelectedConsignment] = useState<ConsignmentWithDetails | null>(null);
+  const [selectedClientForInventory, setSelectedClientForInventory] = useState<number | null>(null);
 
   // Queries
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -50,6 +53,11 @@ export default function Dashboard() {
   const { data: stockCounts = [], isLoading: stockCountsLoading } = useQuery<StockCount[]>({
     queryKey: ["/api/stock-counts"],
     enabled: activeTab === "inventory"
+  });
+
+  const { data: clientInventory = [] } = useQuery({
+    queryKey: ["/api/inventory", selectedClientForInventory],
+    enabled: activeTab === "inventory" && !!selectedClientForInventory
   });
 
   const { data: salesByClient = [] } = useQuery({
@@ -601,18 +609,26 @@ export default function Dashboard() {
           {activeTab === "inventory" && (
             <div className="space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Contagem de Estoque</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+                  <div>
+                    <CardTitle>Contagem de Estoque</CardTitle>
+                    <p className="text-gray-600">Registrar contagem física de estoque nos clientes</p>
+                  </div>
+                  <Button onClick={() => setStockCountDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Contagem
+                  </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Cliente</label>
-                      <Select>
+                      <label className="block text-sm font-medium mb-2">Filtrar por Cliente</label>
+                      <Select onValueChange={(value) => setSelectedClientForInventory(parseInt(value))}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione um cliente" />
+                          <SelectValue placeholder="Todos os clientes" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="0">Todos os clientes</SelectItem>
                           {clients.map((client) => (
                             <SelectItem key={client.id} value={client.id.toString()}>
                               {client.name}
@@ -622,48 +638,159 @@ export default function Dashboard() {
                       </Select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Data da Contagem</label>
-                      <Input type="date" />
+                      <label className="block text-sm font-medium mb-2">Status</label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os status</SelectItem>
+                          <SelectItem value="pending">Pendente contagem</SelectItem>
+                          <SelectItem value="counted">Já contado</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex items-end">
-                      <Button className="w-full">Carregar Estoque</Button>
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input placeholder="Buscar produtos..." className="pl-10" />
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle>Estoque no Cliente</CardTitle>
-                    <p className="text-gray-600">Selecione um cliente para visualizar o estoque</p>
-                  </div>
-                  <Button className="bg-success text-white hover:bg-success/90">
-                    Finalizar Contagem
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Produto</TableHead>
-                          <TableHead>Enviado</TableHead>
-                          <TableHead>Restante</TableHead>
-                          <TableHead>Vendido</TableHead>
-                          <TableHead>Valor Unitário</TableHead>
-                          <TableHead>Total Vendido</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                            Selecione um cliente para carregar o estoque
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
+                  {selectedClientForInventory && (
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle>Estoque do Cliente: {clients.find(c => c.id === selectedClientForInventory)?.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Produto</TableHead>
+                                <TableHead>Tipo</TableHead>
+                                <TableHead>Enviado</TableHead>
+                                <TableHead>Contado</TableHead>
+                                <TableHead>Vendido</TableHead>
+                                <TableHead>Valor Unit.</TableHead>
+                                <TableHead>Total Vendido</TableHead>
+                                <TableHead>Última Contagem</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {clientInventory.length > 0 ? (
+                                clientInventory.map((item: any) => (
+                                  <TableRow key={item.product.id}>
+                                    <TableCell className="font-medium">{item.product.name}</TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline">{item.product.type}</Badge>
+                                    </TableCell>
+                                    <TableCell>{item.totalSent}</TableCell>
+                                    <TableCell>{item.totalCounted}</TableCell>
+                                    <TableCell>
+                                      <span className={item.totalSold > 0 ? "text-green-600 font-medium" : ""}>
+                                        {item.totalSold}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>{formatCurrency(item.product.unitPrice)}</TableCell>
+                                    <TableCell>
+                                      <span className={item.totalSold > 0 ? "text-green-600 font-medium" : ""}>
+                                        {formatCurrency(item.totalSold * parseFloat(item.product.unitPrice))}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className="text-sm text-gray-500">
+                                        {item.lastCountDate ? formatDate(item.lastCountDate) : "Nunca"}
+                                      </span>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                                    Nenhum produto consignado para este cliente
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Contagens Recentes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Enviado</TableHead>
+                              <TableHead>Contado</TableHead>
+                              <TableHead>Vendido</TableHead>
+                              <TableHead>Total Vendido</TableHead>
+                              <TableHead>Data</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {stockCountsLoading ? (
+                              [...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                </TableRow>
+                              ))
+                            ) : stockCounts.length > 0 ? (
+                              stockCounts.map((count) => {
+                                const client = clients.find(c => c.id === count.clientId);
+                                const product = products.find(p => p.id === count.productId);
+                                return (
+                                  <TableRow key={count.id}>
+                                    <TableCell className="font-medium">{client?.name || "Cliente não encontrado"}</TableCell>
+                                    <TableCell>{product?.name || "Produto não encontrado"}</TableCell>
+                                    <TableCell>{count.quantitySent}</TableCell>
+                                    <TableCell>{count.quantityRemaining}</TableCell>
+                                    <TableCell>
+                                      <span className={count.quantitySold > 0 ? "text-green-600 font-medium" : ""}>
+                                        {count.quantitySold}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className={parseFloat(count.totalSold) > 0 ? "text-green-600 font-medium" : ""}>
+                                        {formatCurrency(count.totalSold)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className="text-sm text-gray-500">
+                                        {formatDate(count.countDate)}
+                                      </span>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                                  Nenhuma contagem de estoque registrada
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </CardContent>
               </Card>
             </div>
@@ -794,6 +921,13 @@ export default function Dashboard() {
         onClose={() => {
           setConsignmentDialogOpen(false);
           setSelectedConsignment(null);
+        }}
+      />
+      <StockCountDialog 
+        open={stockCountDialogOpen} 
+        onOpenChange={setStockCountDialogOpen}
+        onClose={() => {
+          setStockCountDialogOpen(false);
         }}
       />
     </div>

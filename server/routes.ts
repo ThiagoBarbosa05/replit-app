@@ -248,6 +248,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Inventory Management
+  app.get("/api/inventory/:clientId", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const inventory = await storage.getClientInventory(clientId);
+      res.json(inventory);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch client inventory" });
+    }
+  });
+
+  app.get("/api/inventory/:clientId/:productId/difference", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const productId = parseInt(req.params.productId);
+      const difference = await storage.calculateStockDifference(clientId, productId);
+      res.json(difference);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to calculate stock difference" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
