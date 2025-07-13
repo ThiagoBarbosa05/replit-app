@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import type { DashboardStats, Client, Product, ConsignmentWithDetails, StockCoun
 type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "inventory" | "reports";
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -801,7 +802,8 @@ export default function Dashboard() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Filtros de Relatório</CardTitle>
+                  <CardTitle>Relatórios de Vendas e Estoque</CardTitle>
+                  <p className="text-gray-600">Dados atualizados em tempo real baseados nas contagens de estoque</p>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -828,7 +830,13 @@ export default function Dashboard() {
                       <Input type="date" />
                     </div>
                     <div className="flex items-end">
-                      <Button className="w-full">Gerar Relatório</Button>
+                      <Button className="w-full" onClick={() => {
+                        // Invalidate queries to refresh data
+                        queryClient.invalidateQueries({ queryKey: ["/api/reports/sales-by-client"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
+                      }}>
+                        Atualizar Dados
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

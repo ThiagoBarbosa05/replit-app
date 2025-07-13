@@ -29,6 +29,8 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       toast({
         title: "Sucesso",
         description: "Consignação criada com sucesso!",
@@ -52,6 +54,8 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       toast({
         title: "Sucesso",
         description: "Consignação atualizada com sucesso!",

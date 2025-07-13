@@ -27,6 +27,9 @@ export default function StockCountDialog({ open, onOpenChange, onClose }: StockC
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/sales-by-client"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/sales-by-product"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       toast({
         title: "Sucesso",
         description: `${results.length} contagem${results.length !== 1 ? 's' : ''} de estoque registrada${results.length !== 1 ? 's' : ''} com sucesso!`,

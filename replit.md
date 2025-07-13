@@ -28,6 +28,14 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced validation with warnings for incorrect quantities
 - ✓ Updated StockCountDialog to support batch processing of multiple stock counts
 
+### Bug Fixes and Data Integration (July 13, 2025)
+- ✓ Fixed consignment data properly showing in client inventory interface
+- ✓ Corrected query invalidation to refresh reports after stock counts
+- ✓ Enhanced ConsignmentDialog to invalidate inventory and stock reports
+- ✓ Added "Atualizar Dados" button in reports section for manual refresh
+- ✓ Verified API endpoints are working correctly for all data relationships
+- ✓ Improved real-time data synchronization across all system modules
+
 ## System Architecture
 
 ### Frontend Architecture
