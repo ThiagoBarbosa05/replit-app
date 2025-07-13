@@ -452,12 +452,26 @@ export default function Dashboard() {
                     products.map((product) => (
                       <Card key={product.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
-                          <div className="w-full h-32 bg-gradient-to-b from-purple-100 to-purple-200 rounded-lg mb-4 flex items-center justify-center">
-                            <Wine className="text-4xl text-primary" />
+                          <div className="w-full h-32 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                            {product.photo ? (
+                              <img 
+                                src={product.photo} 
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-b from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
+                                <Wine className="text-4xl text-primary" />
+                              </div>
+                            )}
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
-                            <p className="text-sm text-gray-600 mb-2">{product.type} • {product.country}</p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="secondary" className="text-xs">{product.type}</Badge>
+                              <Badge variant="outline" className="text-xs">{product.volume}</Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{product.country}</p>
                             <div className="flex items-center justify-between">
                               <span className="text-lg font-bold text-primary">{formatCurrency(product.unitPrice)}</span>
                               <div className="flex items-center space-x-1">

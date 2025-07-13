@@ -18,6 +18,8 @@ export const products = pgTable("products", {
   country: text("country").notNull(),
   type: text("type").notNull(), // tinto, branco, rosé, espumante
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  volume: text("volume").notNull().default("750ml"), // 750ml, 375ml, 187ml
+  photo: text("photo"), // Base64 encoded image
 });
 
 export const consignments = pgTable("consignments", {
