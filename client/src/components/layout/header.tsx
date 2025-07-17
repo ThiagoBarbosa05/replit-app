@@ -10,15 +10,15 @@ interface HeaderProps {
 
 export default function Header({ config }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 hidden lg:block">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-bordeaux-900">{config.title}</h2>
-          <p className="text-gray-600">{config.description}</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-bordeaux-900">{config.title}</h2>
+          <p className="text-sm sm:text-base text-gray-600">{config.description}</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm">
-            <User className="h-5 w-5" />
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <Button variant="ghost" size="sm" className="hidden sm:flex">
+            <User className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
       </div>

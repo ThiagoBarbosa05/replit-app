@@ -31,7 +31,7 @@ export default function ClientForm({ client, onSubmit, onCancel, isLoading }: Cl
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name">Nome da Empresa *</Label>
           <Input
@@ -69,7 +69,7 @@ export default function ClientForm({ client, onSubmit, onCancel, isLoading }: Cl
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="contactName">Nome do Responsável *</Label>
           <Input
@@ -95,11 +95,11 @@ export default function ClientForm({ client, onSubmit, onCancel, isLoading }: Cl
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} className="sm:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="sm:w-auto">
           {isLoading ? "Salvando..." : client ? "Atualizar" : "Criar Cliente"}
         </Button>
       </div>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, BarChart3, Check } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, BarChart3, Check, Menu, X } from "lucide-react";
 import ClientDialog from "@/components/dialogs/client-dialog";
 import ProductDialog from "@/components/dialogs/product-dialog";
 import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
@@ -22,6 +22,7 @@ type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "invent
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [consignmentDialogOpen, setConsignmentDialogOpen] = useState(false);
@@ -124,33 +125,67 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sidebar */}
+      <div className={`
+        fixed lg:relative inset-y-0 left-0 z-30 w-64 transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            setSidebarOpen(false); // Close sidebar on mobile after selection
+          }}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+      
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+        {/* Mobile header with menu button */}
+        <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+          <h1 className="text-lg font-semibold">Grand Cru</h1>
+          <div className="w-8"></div> {/* Spacer for centering */}
+        </div>
+        
         <Header config={getTabConfig(activeTab)} />
         
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
           {/* Dashboard Content */}
           {activeTab === "dashboard" && (
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-3 sm:p-4 lg:p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Total Consignado</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">Total Consignado</p>
                         {statsLoading ? (
-                          <Skeleton className="h-8 w-24 mt-2" />
+                          <Skeleton className="h-6 sm:h-8 w-20 sm:w-24 mt-2" />
                         ) : (
-                          <p className="text-3xl font-bold text-gray-900">{stats?.totalConsigned || "R$ 0,00"}</p>
+                          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats?.totalConsigned || "R$ 0,00"}</p>
                         )}
                       </div>
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Wine className="text-primary text-xl" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <Wine className="text-primary text-sm sm:text-base lg:text-xl" />
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center text-sm">
+                    <div className="mt-2 sm:mt-4 flex items-center text-xs sm:text-sm">
                       <span className="text-success font-medium">+12.5%</span>
                       <span className="text-gray-600 ml-2">vs. mês anterior</span>
                     </div>
@@ -158,21 +193,21 @@ export default function Dashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-3 sm:p-4 lg:p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Vendas do Mês</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">Vendas do Mês</p>
                         {statsLoading ? (
-                          <Skeleton className="h-8 w-24 mt-2" />
+                          <Skeleton className="h-6 sm:h-8 w-20 sm:w-24 mt-2" />
                         ) : (
-                          <p className="text-3xl font-bold text-gray-900">{stats?.monthlySales || "R$ 0,00"}</p>
+                          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats?.monthlySales || "R$ 0,00"}</p>
                         )}
                       </div>
-                      <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="text-success text-xl" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-success/10 rounded-lg flex items-center justify-center">
+                        <BarChart3 className="text-success text-sm sm:text-base lg:text-xl" />
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center text-sm">
+                    <div className="mt-2 sm:mt-4 flex items-center text-xs sm:text-sm">
                       <span className="text-success font-medium">+8.2%</span>
                       <span className="text-gray-600 ml-2">vs. mês anterior</span>
                     </div>
@@ -180,21 +215,21 @@ export default function Dashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-3 sm:p-4 lg:p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Clientes Ativos</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">Clientes Ativos</p>
                         {statsLoading ? (
-                          <Skeleton className="h-8 w-16 mt-2" />
+                          <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 mt-2" />
                         ) : (
-                          <p className="text-3xl font-bold text-gray-900">{stats?.activeClients || 0}</p>
+                          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats?.activeClients || 0}</p>
                         )}
                       </div>
-                      <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                        <Building className="text-secondary text-xl" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
+                        <Building className="text-secondary text-sm sm:text-base lg:text-xl" />
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center text-sm">
+                    <div className="mt-2 sm:mt-4 flex items-center text-xs sm:text-sm">
                       <span className="text-success font-medium">+3</span>
                       <span className="text-gray-600 ml-2">novos este mês</span>
                     </div>
@@ -202,21 +237,21 @@ export default function Dashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-3 sm:p-4 lg:p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Produtos</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">Produtos</p>
                         {statsLoading ? (
-                          <Skeleton className="h-8 w-16 mt-2" />
+                          <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 mt-2" />
                         ) : (
-                          <p className="text-3xl font-bold text-gray-900">{stats?.totalProducts || 0}</p>
+                          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats?.totalProducts || 0}</p>
                         )}
                       </div>
-                      <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center">
-                        <Wine className="text-warning text-xl" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-warning/10 rounded-lg flex items-center justify-center">
+                        <Wine className="text-warning text-sm sm:text-base lg:text-xl" />
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center text-sm">
+                    <div className="mt-2 sm:mt-4 flex items-center text-xs sm:text-sm">
                       <span className="text-gray-600">12 tipos diferentes</span>
                     </div>
                   </CardContent>
@@ -224,10 +259,10 @@ export default function Dashboard() {
               </div>
 
               {/* Recent Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Consignações Recentes</CardTitle>
+                  <CardHeader className="p-3 sm:p-4 lg:p-6">
+                    <CardTitle className="text-lg sm:text-xl">Consignações Recentes</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {consignmentsLoading ? (
@@ -303,24 +338,24 @@ export default function Dashboard() {
           {/* Clients Content */}
           {activeTab === "clients" && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6">
                 <div>
-                  <CardTitle>Clientes</CardTitle>
-                  <p className="text-gray-600">Gerenciar estabelecimentos que recebem vinhos em consignação</p>
+                  <CardTitle className="text-lg sm:text-xl">Clientes</CardTitle>
+                  <p className="text-sm sm:text-base text-gray-600">Gerenciar estabelecimentos que recebem vinhos em consignação</p>
                 </div>
-                <Button onClick={() => openClientDialog()}>
+                <Button onClick={() => openClientDialog()} className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Cliente
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-4 mb-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input placeholder="Buscar clientes..." className="pl-10" />
                   </div>
                   <Select>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48">
                       <SelectValue placeholder="Todos os status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -331,16 +366,16 @@ export default function Dashboard() {
                   </Select>
                 </div>
 
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>CNPJ</TableHead>
-                        <TableHead>Responsável</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead className="min-w-[150px]">Cliente</TableHead>
+                        <TableHead className="min-w-[120px]">CNPJ</TableHead>
+                        <TableHead className="min-w-[120px]">Responsável</TableHead>
+                        <TableHead className="min-w-[100px]">Telefone</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="min-w-[80px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -404,50 +439,52 @@ export default function Dashboard() {
           {/* Products Content */}
           {activeTab === "products" && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6">
                 <div>
-                  <CardTitle>Produtos (Vinhos)</CardTitle>
-                  <p className="text-gray-600">Gerenciar catálogo de vinhos para consignação</p>
+                  <CardTitle className="text-lg sm:text-xl">Produtos (Vinhos)</CardTitle>
+                  <p className="text-sm sm:text-base text-gray-600">Gerenciar catálogo de vinhos para consignação</p>
                 </div>
-                <Button onClick={() => openProductDialog()}>
+                <Button onClick={() => openProductDialog()} className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Produto
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-4 mb-6">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center space-y-4 lg:space-y-0 lg:space-x-4 mb-6">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input placeholder="Buscar produtos..." className="pl-10" />
                   </div>
-                  <Select>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Todos os tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os tipos</SelectItem>
-                      <SelectItem value="tinto">Tinto</SelectItem>
-                      <SelectItem value="branco">Branco</SelectItem>
-                      <SelectItem value="rose">Rosé</SelectItem>
-                      <SelectItem value="espumante">Espumante</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Todos os países" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os países</SelectItem>
-                      <SelectItem value="argentina">Argentina</SelectItem>
-                      <SelectItem value="brasil">Brasil</SelectItem>
-                      <SelectItem value="chile">Chile</SelectItem>
-                      <SelectItem value="franca">França</SelectItem>
-                      <SelectItem value="italia">Itália</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <Select>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Todos os tipos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os tipos</SelectItem>
+                        <SelectItem value="tinto">Tinto</SelectItem>
+                        <SelectItem value="branco">Branco</SelectItem>
+                        <SelectItem value="rose">Rosé</SelectItem>
+                        <SelectItem value="espumante">Espumante</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Todos os países" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os países</SelectItem>
+                        <SelectItem value="argentina">Argentina</SelectItem>
+                        <SelectItem value="brasil">Brasil</SelectItem>
+                        <SelectItem value="chile">Chile</SelectItem>
+                        <SelectItem value="franca">França</SelectItem>
+                        <SelectItem value="italia">Itália</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                   {productsLoading ? (
                     [...Array(8)].map((_, i) => (
                       <Card key={i}>
@@ -546,17 +583,17 @@ export default function Dashboard() {
                   <Input type="date" className="w-48" />
                 </div>
 
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Produtos</TableHead>
-                        <TableHead>Quantidade</TableHead>
-                        <TableHead>Valor Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead className="min-w-[100px]">Data</TableHead>
+                        <TableHead className="min-w-[150px]">Cliente</TableHead>
+                        <TableHead className="min-w-[120px]">Produtos</TableHead>
+                        <TableHead className="min-w-[100px]">Quantidade</TableHead>
+                        <TableHead className="min-w-[100px]">Valor Total</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="min-w-[100px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -693,18 +730,18 @@ export default function Dashboard() {
                         <CardTitle>Estoque do Cliente: {clients.find(c => c.id === selectedClientForInventory)?.name}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="rounded-md border">
+                        <div className="rounded-md border overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Produto</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Enviado</TableHead>
-                                <TableHead>Contado</TableHead>
-                                <TableHead>Vendido</TableHead>
-                                <TableHead>Valor Unit.</TableHead>
-                                <TableHead>Total Vendido</TableHead>
-                                <TableHead>Última Contagem</TableHead>
+                                <TableHead className="min-w-[150px]">Produto</TableHead>
+                                <TableHead className="min-w-[80px]">Tipo</TableHead>
+                                <TableHead className="min-w-[80px]">Enviado</TableHead>
+                                <TableHead className="min-w-[80px]">Contado</TableHead>
+                                <TableHead className="min-w-[80px]">Vendido</TableHead>
+                                <TableHead className="min-w-[100px]">Valor Unit.</TableHead>
+                                <TableHead className="min-w-[100px]">Total Vendido</TableHead>
+                                <TableHead className="min-w-[120px]">Última Contagem</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -754,17 +791,17 @@ export default function Dashboard() {
                       <CardTitle>Contagens Recentes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="rounded-md border">
+                      <div className="rounded-md border overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Produto</TableHead>
-                              <TableHead>Enviado</TableHead>
-                              <TableHead>Contado</TableHead>
-                              <TableHead>Vendido</TableHead>
-                              <TableHead>Total Vendido</TableHead>
-                              <TableHead>Data</TableHead>
+                              <TableHead className="min-w-[150px]">Cliente</TableHead>
+                              <TableHead className="min-w-[120px]">Produto</TableHead>
+                              <TableHead className="min-w-[80px]">Enviado</TableHead>
+                              <TableHead className="min-w-[80px]">Contado</TableHead>
+                              <TableHead className="min-w-[80px]">Vendido</TableHead>
+                              <TableHead className="min-w-[100px]">Total Vendido</TableHead>
+                              <TableHead className="min-w-[100px]">Data</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>

@@ -70,9 +70,9 @@ export default function ProductDialog({ open, onOpenChange, product, onClose }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">
             {product ? "Editar Produto" : "Novo Produto"}
           </DialogTitle>
         </DialogHeader>

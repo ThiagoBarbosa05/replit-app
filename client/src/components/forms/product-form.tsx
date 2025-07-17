@@ -114,7 +114,7 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="country"
@@ -166,7 +166,7 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="volume"
@@ -247,14 +247,15 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
                     <Card className="border-dashed border-2 p-8">
                       <CardContent className="p-0">
                         <div className="text-center">
-                          <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                          <p className="text-sm text-gray-600 mb-4">
+                          <Image className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mb-4" />
+                          <p className="text-xs sm:text-sm text-gray-600 mb-4">
                             Clique para adicionar uma foto do produto
                           </p>
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => fileInputRef.current?.click()}
+                            className="w-full sm:w-auto"
                           >
                             <Upload className="h-4 w-4 mr-2" />
                             Selecionar Imagem
@@ -288,11 +289,11 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
           )}
         />
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button type="submit" disabled={isLoading} className="flex-1">
             {isLoading ? "Salvando..." : product ? "Atualizar Produto" : "Cadastrar Produto"}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} className="sm:w-auto">
             Cancelar
           </Button>
         </div>

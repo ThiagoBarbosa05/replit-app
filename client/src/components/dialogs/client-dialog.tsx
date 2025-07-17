@@ -70,9 +70,9 @@ export default function ClientDialog({ open, onOpenChange, client, onClose }: Cl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">
             {client ? "Editar Cliente" : "Novo Cliente"}
           </DialogTitle>
         </DialogHeader>
