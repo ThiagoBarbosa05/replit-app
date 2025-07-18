@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -33,6 +33,10 @@ export default function Dashboard() {
   const [selectedConsignment, setSelectedConsignment] = useState<ConsignmentWithDetails | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedClientForInventory, setSelectedClientForInventory] = useState<number | null>(null);
+  
+  // States para busca e filtros
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientStatusFilter, setClientStatusFilter] = useState<string>("all");
 
   // Queries
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -122,6 +126,21 @@ export default function Dashboard() {
     const d = new Date(date);
     return d.toLocaleDateString('pt-BR');
   };
+
+  // Filtrar clientes baseado na busca e status
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesSearch = client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                           client.cnpj.includes(clientSearch) ||
+                           client.contactName.toLowerCase().includes(clientSearch.toLowerCase());
+      
+      const matchesStatus = clientStatusFilter === "all" || 
+                           (clientStatusFilter === "active" && client.isActive) ||
+                           (clientStatusFilter === "inactive" && !client.isActive);
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [clients, clientSearch, clientStatusFilter]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -352,9 +371,14 @@ export default function Dashboard() {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input placeholder="Buscar clientes..." className="pl-10" />
+                    <Input 
+                      placeholder="Buscar por nome, CNPJ ou responsável..." 
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      className="pl-10" 
+                    />
                   </div>
-                  <Select>
+                  <Select value={clientStatusFilter} onValueChange={setClientStatusFilter}>
                     <SelectTrigger className="w-full sm:w-48">
                       <SelectValue placeholder="Todos os status" />
                     </SelectTrigger>
@@ -364,6 +388,11 @@ export default function Dashboard() {
                       <SelectItem value="inactive">Inativos</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Contador de resultados */}
+                <div className="mb-4 text-sm text-gray-600">
+                  {clientsLoading ? "Carregando..." : `${filteredClients.length} cliente${filteredClients.length !== 1 ? 's' : ''} encontrado${filteredClients.length !== 1 ? 's' : ''}`}
                 </div>
 
                 <div className="rounded-md border overflow-x-auto">
@@ -390,8 +419,8 @@ export default function Dashboard() {
                             <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                           </TableRow>
                         ))
-                      ) : clients.length > 0 ? (
-                        clients.map((client) => (
+                      ) : filteredClients.length > 0 ? (
+                        filteredClients.map((client) => (
                           <TableRow key={client.id}>
                             <TableCell>
                               <div>
@@ -425,7 +454,7 @@ export default function Dashboard() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                            Nenhum cliente cadastrado
+                            {clients.length === 0 ? "Nenhum cliente cadastrado" : "Nenhum cliente encontrado com os filtros aplicados"}
                           </TableCell>
                         </TableRow>
                       )}

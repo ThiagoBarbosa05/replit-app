@@ -1,14 +1,14 @@
-import { 
-  Client, 
-  Product, 
-  Consignment, 
-  ConsignmentItem, 
+import {
+  Client,
+  Product,
+  Consignment,
+  ConsignmentItem,
   StockCount,
   User,
-  InsertClient, 
-  InsertProduct, 
-  InsertConsignment, 
-  InsertConsignmentItem, 
+  InsertClient,
+  InsertProduct,
+  InsertConsignment,
+  InsertConsignmentItem,
   InsertStockCount,
   InsertUser,
   ConsignmentWithDetails,
@@ -18,14 +18,14 @@ import {
   consignments,
   consignmentItems,
   stockCounts,
-  users
+  users,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, desc, count, sum } from "drizzle-orm";
 
 export interface IStorage {
   // Clients
-  getClients(): Promise<Client[]>;
+  getClients(searchTerm?: string): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: Partial<InsertClient>): Promise<Client>;
@@ -41,14 +41,22 @@ export interface IStorage {
   // Consignments
   getConsignments(): Promise<ConsignmentWithDetails[]>;
   getConsignment(id: number): Promise<ConsignmentWithDetails | undefined>;
-  createConsignment(consignment: InsertConsignment & { items: InsertConsignmentItem[] }): Promise<ConsignmentWithDetails>;
-  updateConsignment(id: number, consignment: Partial<InsertConsignment>): Promise<ConsignmentWithDetails>;
+  createConsignment(
+    consignment: InsertConsignment & { items: InsertConsignmentItem[] },
+  ): Promise<ConsignmentWithDetails>;
+  updateConsignment(
+    id: number,
+    consignment: Partial<InsertConsignment>,
+  ): Promise<ConsignmentWithDetails>;
   deleteConsignment(id: number): Promise<boolean>;
 
   // Stock Counts
   getStockCounts(clientId?: number): Promise<StockCount[]>;
   createStockCount(stockCount: InsertStockCount): Promise<StockCount>;
-  updateStockCount(id: number, stockCount: Partial<InsertStockCount>): Promise<StockCount>;
+  updateStockCount(
+    id: number,
+    stockCount: Partial<InsertStockCount>,
+  ): Promise<StockCount>;
 
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>;
@@ -92,7 +100,7 @@ export class DatabaseStorage implements IStorage {
           },
           {
             name: "João Silva",
-            email: "joao@grandcru.com", 
+            email: "joao@grandcru.com",
             password: "manager123",
             role: "manager",
             isActive: 1,
@@ -101,9 +109,9 @@ export class DatabaseStorage implements IStorage {
             name: "Maria Santos",
             email: "maria@grandcru.com",
             password: "user123",
-            role: "user", 
+            role: "user",
             isActive: 1,
-          }
+          },
         ]);
       }
     } catch (error) {
@@ -112,8 +120,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Clients
-  async getClients(): Promise<Client[]> {
-    return await db.select().from(clients);
+  async getClients(searchTerm?: string): Promise<Client[]> {
+    return await db.select().from(clients).where(searchTerm ? sql`${clients.name} ILIKE ${'%' + searchTerm + '%'}` : undefined);
   }
 
   async getClientByCnpj(cnpj: string): Promise<Client | null> {
@@ -132,20 +140,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    const [client] = await db
-      .insert(clients)
-      .values(insertClient)
-      .returning();
+    const [client] = await db.insert(clients).values(insertClient).returning();
     return client;
   }
 
-  async updateClient(id: number, clientData: Partial<InsertClient>): Promise<Client> {
+  async updateClient(
+    id: number,
+    clientData: Partial<InsertClient>,
+  ): Promise<Client> {
     const [updated] = await db
       .update(clients)
       .set(clientData)
       .where(eq(clients.id, id))
       .returning();
-    
+
     if (!updated) throw new Error("Client not found");
     return updated;
   }
@@ -161,7 +169,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
     return product || undefined;
   }
 
@@ -171,19 +182,22 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...insertProduct,
         volume: insertProduct.volume || "750ml",
-        photo: insertProduct.photo || null
+        photo: insertProduct.photo || null,
       })
       .returning();
     return product;
   }
 
-  async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product> {
+  async updateProduct(
+    id: number,
+    productData: Partial<InsertProduct>,
+  ): Promise<Product> {
     const [updated] = await db
       .update(products)
       .set(productData)
       .where(eq(products.id, id))
       .returning();
-    
+
     if (!updated) throw new Error("Product not found");
     return updated;
   }
@@ -210,7 +224,7 @@ export class DatabaseStorage implements IStorage {
           phone: clients.phone,
           contactName: clients.contactName,
           isActive: clients.isActive,
-        }
+        },
       })
       .from(consignments)
       .leftJoin(clients, eq(consignments.clientId, clients.id))
@@ -236,7 +250,7 @@ export class DatabaseStorage implements IStorage {
             unitPrice: products.unitPrice,
             volume: products.volume,
             photo: products.photo,
-          }
+          },
         })
         .from(consignmentItems)
         .leftJoin(products, eq(consignmentItems.productId, products.id))
@@ -249,21 +263,25 @@ export class DatabaseStorage implements IStorage {
         status: row.status,
         totalValue: row.totalValue,
         client: row.client,
-        items: items.filter(item => item.product).map(item => ({
-          id: item.id,
-          consignmentId: item.consignmentId,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          product: item.product!
-        }))
+        items: items
+          .filter((item) => item.product)
+          .map((item) => ({
+            id: item.id,
+            consignmentId: item.consignmentId,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            product: item.product!,
+          })),
       });
     }
 
     return consignmentsWithItems;
   }
 
-  async getConsignment(id: number): Promise<ConsignmentWithDetails | undefined> {
+  async getConsignment(
+    id: number,
+  ): Promise<ConsignmentWithDetails | undefined> {
     const [consignmentRow] = await db
       .select({
         id: consignments.id,
@@ -279,7 +297,7 @@ export class DatabaseStorage implements IStorage {
           phone: clients.phone,
           contactName: clients.contactName,
           isActive: clients.isActive,
-        }
+        },
       })
       .from(consignments)
       .leftJoin(clients, eq(consignments.clientId, clients.id))
@@ -302,7 +320,7 @@ export class DatabaseStorage implements IStorage {
           unitPrice: products.unitPrice,
           volume: products.volume,
           photo: products.photo,
-        }
+        },
       })
       .from(consignmentItems)
       .leftJoin(products, eq(consignmentItems.productId, products.id))
@@ -315,22 +333,29 @@ export class DatabaseStorage implements IStorage {
       status: consignmentRow.status,
       totalValue: consignmentRow.totalValue,
       client: consignmentRow.client,
-      items: items.filter(item => item.product).map(item => ({
-        id: item.id,
-        consignmentId: item.consignmentId,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        product: item.product!
-      }))
+      items: items
+        .filter((item) => item.product)
+        .map((item) => ({
+          id: item.id,
+          consignmentId: item.consignmentId,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          product: item.product!,
+        })),
     };
   }
 
-  async createConsignment(data: InsertConsignment & { items: InsertConsignmentItem[] }): Promise<ConsignmentWithDetails> {
+  async createConsignment(
+    data: InsertConsignment & { items: InsertConsignmentItem[] },
+  ): Promise<ConsignmentWithDetails> {
     // Calculate total value
-    const totalValue = data.items.reduce((sum, item) => 
-      sum + (parseFloat(item.unitPrice) * item.quantity), 0
-    ).toFixed(2);
+    const totalValue = data.items
+      .reduce(
+        (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
+        0,
+      )
+      .toFixed(2);
 
     // Create consignment
     const [consignment] = await db
@@ -343,14 +368,12 @@ export class DatabaseStorage implements IStorage {
 
     // Create consignment items
     if (data.items.length > 0) {
-      await db
-        .insert(consignmentItems)
-        .values(
-          data.items.map(item => ({
-            ...item,
-            consignmentId: consignment.id,
-          }))
-        );
+      await db.insert(consignmentItems).values(
+        data.items.map((item) => ({
+          ...item,
+          consignmentId: consignment.id,
+        })),
+      );
     }
 
     const result = await this.getConsignment(consignment.id);
@@ -358,15 +381,18 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateConsignment(id: number, consignmentData: Partial<InsertConsignment>): Promise<ConsignmentWithDetails> {
+  async updateConsignment(
+    id: number,
+    consignmentData: Partial<InsertConsignment>,
+  ): Promise<ConsignmentWithDetails> {
     const [updated] = await db
       .update(consignments)
       .set(consignmentData)
       .where(eq(consignments.id, id))
       .returning();
-    
+
     if (!updated) throw new Error("Consignment not found");
-    
+
     const result = await this.getConsignment(id);
     if (!result) throw new Error("Failed to update consignment");
     return result;
@@ -374,8 +400,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteConsignment(id: number): Promise<boolean> {
     // Delete associated items first
-    await db.delete(consignmentItems).where(eq(consignmentItems.consignmentId, id));
-    
+    await db
+      .delete(consignmentItems)
+      .where(eq(consignmentItems.consignmentId, id));
+
     // Delete consignment
     const result = await db.delete(consignments).where(eq(consignments.id, id));
     return (result.rowCount || 0) > 0;
@@ -384,15 +412,23 @@ export class DatabaseStorage implements IStorage {
   // Stock Counts
   async getStockCounts(clientId?: number): Promise<StockCount[]> {
     if (clientId) {
-      return await db.select().from(stockCounts).where(eq(stockCounts.clientId, clientId));
+      return await db
+        .select()
+        .from(stockCounts)
+        .where(eq(stockCounts.clientId, clientId));
     }
     return await db.select().from(stockCounts);
   }
 
-  async createStockCount(insertStockCount: InsertStockCount): Promise<StockCount> {
-    const quantitySold = insertStockCount.quantitySent - insertStockCount.quantityRemaining;
-    const totalSold = (quantitySold * parseFloat(insertStockCount.unitPrice)).toFixed(2);
-    
+  async createStockCount(
+    insertStockCount: InsertStockCount,
+  ): Promise<StockCount> {
+    const quantitySold =
+      insertStockCount.quantitySent - insertStockCount.quantityRemaining;
+    const totalSold = (
+      quantitySold * parseFloat(insertStockCount.unitPrice)
+    ).toFixed(2);
+
     const [stockCount] = await db
       .insert(stockCounts)
       .values({
@@ -401,31 +437,43 @@ export class DatabaseStorage implements IStorage {
         totalSold,
       })
       .returning();
-    
+
     return stockCount;
   }
 
-  async updateStockCount(id: number, stockCountData: Partial<InsertStockCount>): Promise<StockCount> {
-    const [existing] = await db.select().from(stockCounts).where(eq(stockCounts.id, id));
+  async updateStockCount(
+    id: number,
+    stockCountData: Partial<InsertStockCount>,
+  ): Promise<StockCount> {
+    const [existing] = await db
+      .select()
+      .from(stockCounts)
+      .where(eq(stockCounts.id, id));
     if (!existing) throw new Error("Stock count not found");
-    
+
     // Calculate derived fields if necessary
     const updateData: any = { ...stockCountData };
-    if (stockCountData.quantityRemaining !== undefined || stockCountData.quantitySent !== undefined) {
+    if (
+      stockCountData.quantityRemaining !== undefined ||
+      stockCountData.quantitySent !== undefined
+    ) {
       const quantitySent = stockCountData.quantitySent ?? existing.quantitySent;
-      const quantityRemaining = stockCountData.quantityRemaining ?? existing.quantityRemaining;
+      const quantityRemaining =
+        stockCountData.quantityRemaining ?? existing.quantityRemaining;
       const unitPrice = stockCountData.unitPrice ?? existing.unitPrice;
-      
+
       updateData.quantitySold = quantitySent - quantityRemaining;
-      updateData.totalSold = (updateData.quantitySold * parseFloat(unitPrice)).toFixed(2);
+      updateData.totalSold = (
+        updateData.quantitySold * parseFloat(unitPrice)
+      ).toFixed(2);
     }
-    
+
     const [updated] = await db
       .update(stockCounts)
       .set(updateData)
       .where(eq(stockCounts.id, id))
       .returning();
-    
+
     if (!updated) throw new Error("Failed to update stock count");
     return updated;
   }
@@ -434,15 +482,15 @@ export class DatabaseStorage implements IStorage {
   async getDashboardStats(): Promise<DashboardStats> {
     // Get total consigned amount
     const [totalConsignedResult] = await db
-      .select({ 
-        total: sql<string>`COALESCE(SUM(CAST(${consignments.totalValue} AS DECIMAL)), 0)` 
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${consignments.totalValue} AS DECIMAL)), 0)`,
       })
       .from(consignments);
 
     // Get monthly sales amount
     const [monthlySalesResult] = await db
-      .select({ 
-        total: sql<string>`COALESCE(SUM(CAST(${stockCounts.totalSold} AS DECIMAL)), 0)` 
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${stockCounts.totalSold} AS DECIMAL)), 0)`,
       })
       .from(stockCounts);
 
@@ -457,11 +505,14 @@ export class DatabaseStorage implements IStorage {
       .select({ count: count() })
       .from(products);
 
-    const totalConsigned = parseFloat(totalConsignedResult.total)
-      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const totalConsigned = parseFloat(
+      totalConsignedResult.total,
+    ).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-    const monthlySales = parseFloat(monthlySalesResult.total)
-      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const monthlySales = parseFloat(monthlySalesResult.total).toLocaleString(
+      "pt-BR",
+      { style: "currency", currency: "BRL" },
+    );
 
     return {
       totalConsigned,
@@ -499,7 +550,7 @@ export class DatabaseStorage implements IStorage {
     if (endDate) {
       conditions.push(sql`${stockCounts.countDate} <= ${endDate}`);
     }
-    
+
     let query = baseQuery;
     if (conditions.length === 1) {
       query = baseQuery.where(conditions[0]);
@@ -508,12 +559,21 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result = await query
-      .groupBy(stockCounts.clientId, clients.id, clients.name, clients.cnpj, clients.address, clients.phone, clients.contactName, clients.isActive)
+      .groupBy(
+        stockCounts.clientId,
+        clients.id,
+        clients.name,
+        clients.cnpj,
+        clients.address,
+        clients.phone,
+        clients.contactName,
+        clients.isActive,
+      )
       .orderBy(sql`SUM(CAST(${stockCounts.totalSold} AS DECIMAL)) DESC`);
-    
+
     return result
-      .filter(row => row.client)
-      .map(row => ({
+      .filter((row) => row.client)
+      .map((row) => ({
         client: row.client!,
         totalSales: parseFloat(row.totalSales),
         quantitySold: row.quantitySold,
@@ -547,7 +607,7 @@ export class DatabaseStorage implements IStorage {
     if (endDate) {
       conditions.push(sql`${stockCounts.countDate} <= ${endDate}`);
     }
-    
+
     let query = baseQuery;
     if (conditions.length === 1) {
       query = baseQuery.where(conditions[0]);
@@ -556,12 +616,21 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result = await query
-      .groupBy(stockCounts.productId, products.id, products.name, products.country, products.type, products.unitPrice, products.volume, products.photo)
+      .groupBy(
+        stockCounts.productId,
+        products.id,
+        products.name,
+        products.country,
+        products.type,
+        products.unitPrice,
+        products.volume,
+        products.photo,
+      )
       .orderBy(sql`SUM(CAST(${stockCounts.totalSold} AS DECIMAL)) DESC`);
-    
+
     return result
-      .filter(row => row.product)
-      .map(row => ({
+      .filter((row) => row.product)
+      .map((row) => ({
         product: row.product!,
         totalSales: parseFloat(row.totalSales),
         quantitySold: row.quantitySold,
@@ -583,10 +652,13 @@ export class DatabaseStorage implements IStorage {
           unitPrice: products.unitPrice,
           volume: products.volume,
           photo: products.photo,
-        }
+        },
       })
       .from(consignmentItems)
-      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .leftJoin(
+        consignments,
+        eq(consignmentItems.consignmentId, consignments.id),
+      )
       .leftJoin(products, eq(consignmentItems.productId, products.id));
 
     // Get all stock counts
@@ -598,14 +670,14 @@ export class DatabaseStorage implements IStorage {
     // Process sent items
     for (const item of sentItems) {
       if (!item.product) continue;
-      
+
       const existing = stockMap.get(item.productId) || {
         product: item.product,
         totalSent: 0,
         totalRemaining: 0,
         clientCount: new Set(),
       };
-      
+
       existing.totalSent += item.quantity;
       existing.clientCount.add(item.clientId);
       stockMap.set(item.productId, existing);
@@ -615,16 +687,19 @@ export class DatabaseStorage implements IStorage {
     for (const count of soldItems) {
       const existing = stockMap.get(count.productId);
       if (existing) {
-        existing.totalRemaining = Math.max(0, existing.totalSent - count.quantitySold);
+        existing.totalRemaining = Math.max(
+          0,
+          existing.totalSent - count.quantitySold,
+        );
       }
     }
 
-    return Array.from(stockMap.values()).map(item => ({
+    return Array.from(stockMap.values()).map((item) => ({
       product: item.product,
       totalSent: item.totalSent,
       totalRemaining: item.totalRemaining,
       clientCount: item.clientCount.size,
-      value: item.totalRemaining * parseFloat(item.product.unitPrice)
+      value: item.totalRemaining * parseFloat(item.product.unitPrice),
     }));
   }
 
@@ -644,10 +719,13 @@ export class DatabaseStorage implements IStorage {
           unitPrice: products.unitPrice,
           volume: products.volume,
           photo: products.photo,
-        }
+        },
       })
       .from(consignmentItems)
-      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .leftJoin(
+        consignments,
+        eq(consignmentItems.consignmentId, consignments.id),
+      )
       .leftJoin(products, eq(consignmentItems.productId, products.id))
       .where(eq(consignments.clientId, clientId));
 
@@ -686,22 +764,31 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return Array.from(inventory.values())
-      .sort((a, b) => a.product.name.localeCompare(b.product.name));
+    return Array.from(inventory.values()).sort((a, b) =>
+      a.product.name.localeCompare(b.product.name),
+    );
   }
 
-  async calculateStockDifference(clientId: number, productId: number): Promise<any> {
+  async calculateStockDifference(
+    clientId: number,
+    productId: number,
+  ): Promise<any> {
     // Get total sent for this client and product
     const [totalSentResult] = await db
-      .select({ 
-        total: sql<number>`COALESCE(SUM(${consignmentItems.quantity}), 0)` 
+      .select({
+        total: sql<number>`COALESCE(SUM(${consignmentItems.quantity}), 0)`,
       })
       .from(consignmentItems)
-      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
-      .where(and(
-        eq(consignments.clientId, clientId),
-        eq(consignmentItems.productId, productId)
-      ));
+      .leftJoin(
+        consignments,
+        eq(consignmentItems.consignmentId, consignments.id),
+      )
+      .where(
+        and(
+          eq(consignments.clientId, clientId),
+          eq(consignmentItems.productId, productId),
+        ),
+      );
 
     const totalSent = totalSentResult.total;
 
@@ -709,19 +796,29 @@ export class DatabaseStorage implements IStorage {
     const [latestCount] = await db
       .select()
       .from(stockCounts)
-      .where(and(
-        eq(stockCounts.clientId, clientId),
-        eq(stockCounts.productId, productId)
-      ))
+      .where(
+        and(
+          eq(stockCounts.clientId, clientId),
+          eq(stockCounts.productId, productId),
+        ),
+      )
       .orderBy(desc(stockCounts.countDate))
       .limit(1);
 
-    const remainingStock = latestCount ? latestCount.quantityRemaining : totalSent;
+    const remainingStock = latestCount
+      ? latestCount.quantityRemaining
+      : totalSent;
     const soldQuantity = totalSent - remainingStock;
 
     // Get product and client info
-    const [product] = await db.select().from(products).where(eq(products.id, productId));
-    const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId));
+    const [client] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.id, clientId));
 
     return {
       client: client || null,
@@ -730,7 +827,7 @@ export class DatabaseStorage implements IStorage {
       remainingStock,
       soldQuantity,
       salesValue: soldQuantity * parseFloat(product?.unitPrice || "0"),
-      lastCountDate: latestCount?.countDate || null
+      lastCountDate: latestCount?.countDate || null,
     };
   }
 
@@ -767,7 +864,7 @@ export class DatabaseStorage implements IStorage {
       .set(userData)
       .where(eq(users.id, id))
       .returning();
-    
+
     if (!updated) throw new Error("User not found");
     return updated;
   }

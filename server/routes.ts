@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingClient) {
         return res
           .status(400)
-          .json({ message: `Cliente com o CNPJ ${clientData.cnpj} já existe` });
+          .send(`Cliente com o CNPJ ${clientData.cnpj} já existe`);
       }
       const client = await storage.createClient(clientData);
       res.status(201).json(client);

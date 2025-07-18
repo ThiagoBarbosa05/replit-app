@@ -31,6 +31,7 @@ export default function ClientDialog({ open, onOpenChange, client, onClose }: Cl
       onClose();
     },
     onError: (error: any) => {
+      console.log(error.message.message)
       toast({
         title: "Erro",
         description: error.message || "Erro ao criar cliente",
@@ -54,6 +55,7 @@ export default function ClientDialog({ open, onOpenChange, client, onClose }: Cl
       onClose();
     },
     onError: (error: any) => {
+      
       toast({
         title: "Erro",
         description: error.message || "Erro ao atualizar cliente",
