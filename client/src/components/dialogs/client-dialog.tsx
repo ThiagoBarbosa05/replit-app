@@ -23,6 +23,7 @@ export default function ClientDialog({ open, onOpenChange, client, onClose }: Cl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Sucesso",
         description: "Cliente criado com sucesso!",
@@ -45,6 +46,7 @@ export default function ClientDialog({ open, onOpenChange, client, onClose }: Cl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Sucesso",
         description: "Cliente atualizado com sucesso!",

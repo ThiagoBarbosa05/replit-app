@@ -23,6 +23,7 @@ export default function ProductDialog({ open, onOpenChange, product, onClose }: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Sucesso",
         description: "Produto criado com sucesso!",
@@ -45,6 +46,7 @@ export default function ProductDialog({ open, onOpenChange, product, onClose }: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Sucesso",
         description: "Produto atualizado com sucesso!",
