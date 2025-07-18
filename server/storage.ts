@@ -30,6 +30,8 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: number): Promise<boolean>;
+  deactivateClient(id: number): Promise<Client>;
+  activateClient(id: number): Promise<Client>;
 
   // Products
   getProducts(): Promise<Product[]>;
@@ -188,6 +190,28 @@ export class DatabaseStorage implements IStorage {
   async deleteClient(id: number): Promise<boolean> {
     const result = await db.delete(clients).where(eq(clients.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  async deactivateClient(id: number): Promise<Client> {
+    const [updated] = await db
+      .update(clients)
+      .set({ isActive: 0 })
+      .where(eq(clients.id, id))
+      .returning();
+
+    if (!updated) throw new Error("Client not found");
+    return updated;
+  }
+
+  async activateClient(id: number): Promise<Client> {
+    const [updated] = await db
+      .update(clients)
+      .set({ isActive: 1 })
+      .where(eq(clients.id, id))
+      .returning();
+
+    if (!updated) throw new Error("Client not found");
+    return updated;
   }
 
   // Products

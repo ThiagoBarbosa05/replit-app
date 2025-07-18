@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, BarChart3, Check, Menu, X } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, BarChart3, Check, Menu, X, UserX, UserCheck } from "lucide-react";
 import ClientDialog from "@/components/dialogs/client-dialog";
 import ClientDetailsDialog from "@/components/dialogs/client-details-dialog";
 import ProductDialog from "@/components/dialogs/product-dialog";
@@ -118,6 +118,34 @@ export default function Dashboard() {
   const viewClientDetails = (client: Client) => {
     setSelectedClient(client);
     setClientDetailsDialogOpen(true);
+  };
+
+  const toggleClientStatus = async (client: Client) => {
+    const action = client.isActive ? "desativar" : "ativar";
+    const confirmation = confirm(`Tem certeza que deseja ${action} o cliente "${client.name}"?`);
+    
+    if (!confirmation) return;
+
+    try {
+      const endpoint = client.isActive ? "deactivate" : "activate";
+      const response = await fetch(`/api/clients/${client.id}/${endpoint}`, {
+        method: "PATCH",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} client`);
+      }
+
+      // Refetch clients data
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      
+      // Show success message using the browser's built-in alert for simplicity
+      alert(`Cliente ${action === "desativar" ? "desativado" : "ativado"} com sucesso!`);
+      
+    } catch (error) {
+      console.error(`Error ${action}ing client:`, error);
+      alert(`Erro ao ${action} cliente. Tente novamente.`);
+    }
   };
 
   const getTabConfig = (tab: ActiveTab) => {
@@ -448,8 +476,17 @@ export default function Dashboard() {
                                 <Button variant="ghost" size="sm" onClick={() => openClientDialog(client)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => toggleClientStatus(client)}
+                                  title={client.isActive ? "Desativar cliente" : "Ativar cliente"}
+                                >
+                                  {client.isActive ? (
+                                    <UserX className="h-4 w-4 text-red-500" />
+                                  ) : (
+                                    <UserCheck className="h-4 w-4 text-green-500" />
+                                  )}
                                 </Button>
                               </div>
                             </TableCell>

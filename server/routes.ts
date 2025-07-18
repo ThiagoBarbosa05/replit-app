@@ -74,6 +74,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/clients/:id/deactivate", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const client = await storage.deactivateClient(id);
+      res.json(client);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to deactivate client", error });
+    }
+  });
+
+  app.patch("/api/clients/:id/activate", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const client = await storage.activateClient(id);
+      res.json(client);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to activate client", error });
+    }
+  });
+
   // Products
   app.get("/api/products", async (req, res) => {
     try {
