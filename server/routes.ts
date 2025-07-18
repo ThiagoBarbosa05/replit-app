@@ -134,7 +134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Consignments
   app.get("/api/consignments", async (req, res) => {
     try {
-      const consignments = await storage.getConsignments();
+      const clientId = req.query.clientId as string;
+      const consignments = await storage.getConsignments(clientId ? parseInt(clientId) : undefined);
       res.json(consignments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch consignments" });

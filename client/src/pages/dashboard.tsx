@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Eye, Edit, Trash2, Plus, Search, Wine, Building, Truck, ClipboardList, BarChart3, Check, Menu, X } from "lucide-react";
 import ClientDialog from "@/components/dialogs/client-dialog";
+import ClientDetailsDialog from "@/components/dialogs/client-details-dialog";
 import ProductDialog from "@/components/dialogs/product-dialog";
 import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
 import StockCountDialog from "@/components/dialogs/stock-count-dialog";
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [clientDetailsDialogOpen, setClientDetailsDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [consignmentDialogOpen, setConsignmentDialogOpen] = useState(false);
   const [stockCountDialogOpen, setStockCountDialogOpen] = useState(false);
@@ -111,6 +113,11 @@ export default function Dashboard() {
   const openUserDialog = (user?: User) => {
     setSelectedUser(user || null);
     setUserDialogOpen(true);
+  };
+
+  const viewClientDetails = (client: Client) => {
+    setSelectedClient(client);
+    setClientDetailsDialogOpen(true);
   };
 
   const getTabConfig = (tab: ActiveTab) => {
@@ -435,7 +442,7 @@ export default function Dashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                <Button variant="ghost" size="sm">
+                                <Button onClick={() => viewClientDetails(client)} variant="ghost" size="sm">
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={() => openClientDialog(client)}>
@@ -1094,6 +1101,13 @@ export default function Dashboard() {
           setSelectedClient(null);
         }}
       />
+      
+      <ClientDetailsDialog 
+        open={clientDetailsDialogOpen} 
+        onOpenChange={setClientDetailsDialogOpen}
+        client={selectedClient}
+      />
+      
       <ProductDialog 
         open={productDialogOpen} 
         onOpenChange={setProductDialogOpen}

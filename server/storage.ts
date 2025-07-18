@@ -39,7 +39,7 @@ export interface IStorage {
   deleteProduct(id: number): Promise<boolean>;
 
   // Consignments
-  getConsignments(): Promise<ConsignmentWithDetails[]>;
+  getConsignments(clientId?: number): Promise<ConsignmentWithDetails[]>;
   getConsignment(id: number): Promise<ConsignmentWithDetails | undefined>;
   createConsignment(
     consignment: InsertConsignment & { items: InsertConsignmentItem[] },
@@ -235,8 +235,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Consignments
-  async getConsignments(): Promise<ConsignmentWithDetails[]> {
-    const result = await db
+  async getConsignments(clientId?: number): Promise<ConsignmentWithDetails[]> {
+    let query = db
       .select({
         id: consignments.id,
         clientId: consignments.clientId,
@@ -254,8 +254,14 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(consignments)
-      .leftJoin(clients, eq(consignments.clientId, clients.id))
-      .orderBy(desc(consignments.date));
+      .leftJoin(clients, eq(consignments.clientId, clients.id));
+
+    // Filtrar por clientId se fornecido
+    if (clientId) {
+      query = query.where(eq(consignments.clientId, clientId));
+    }
+
+    const result = await query.orderBy(desc(consignments.date));
 
     const consignmentsWithItems: ConsignmentWithDetails[] = [];
 
