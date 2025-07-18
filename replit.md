@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Server-Side Search and Filter Implementation (July 18, 2025)
+- ✓ Implemented server-side search and filtering for clients using PostgreSQL
+- ✓ Added search functionality that works on client name, CNPJ, and contact name
+- ✓ Added status filter for active/inactive clients
+- ✓ Updated API endpoint to accept search and status query parameters
+- ✓ Modified frontend to send search parameters to server instead of client-side filtering
+- ✓ Enhanced database queries with Drizzle ORM using ilike, or, and, eq operators
+- ✓ Improved performance by moving filtering logic from frontend to database level
+
 ### PostgreSQL Database Integration (July 18, 2025)
 - ✓ Successfully migrated from in-memory MemStorage to PostgreSQL database using Neon
 - ✓ Implemented complete DatabaseStorage class with Drizzle ORM integration

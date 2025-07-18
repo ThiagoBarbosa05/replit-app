@@ -45,7 +45,16 @@ export default function Dashboard() {
   });
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
+    queryKey: ["/api/clients", clientSearch, clientStatusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (clientSearch) params.append('search', clientSearch);
+      if (clientStatusFilter && clientStatusFilter !== 'all') params.append('status', clientStatusFilter);
+      
+      const response = await fetch(`/api/clients?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch clients');
+      return response.json();
+    },
     enabled: activeTab === "clients" || activeTab === "consignments" || activeTab === "inventory"
   });
 
@@ -127,20 +136,8 @@ export default function Dashboard() {
     return d.toLocaleDateString('pt-BR');
   };
 
-  // Filtrar clientes baseado na busca e status
-  const filteredClients = useMemo(() => {
-    return clients.filter(client => {
-      const matchesSearch = client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                           client.cnpj.includes(clientSearch) ||
-                           client.contactName.toLowerCase().includes(clientSearch.toLowerCase());
-      
-      const matchesStatus = clientStatusFilter === "all" || 
-                           (clientStatusFilter === "active" && client.isActive) ||
-                           (clientStatusFilter === "inactive" && !client.isActive);
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [clients, clientSearch, clientStatusFilter]);
+  // Agora os clientes já vêm filtrados do servidor
+  const filteredClients = clients;
 
   return (
     <div className="flex h-screen bg-gray-50">

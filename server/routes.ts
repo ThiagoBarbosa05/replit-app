@@ -8,7 +8,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clients
   app.get("/api/clients", async (req, res) => {
     try {
-      const clients = await storage.getClients();
+      const searchTerm = req.query.search as string;
+      const statusFilter = req.query.status as string;
+      const clients = await storage.getClients(searchTerm, statusFilter);
       res.json(clients);
     } catch (error) {
       console.log(error)

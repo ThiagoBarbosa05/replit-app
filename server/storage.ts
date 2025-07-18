@@ -21,11 +21,11 @@ import {
   users,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and, desc, count, sum } from "drizzle-orm";
+import { eq, sql, and, desc, count, sum, or, like, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // Clients
-  getClients(searchTerm?: string): Promise<Client[]>;
+  getClients(searchTerm?: string, statusFilter?: string): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: Partial<InsertClient>): Promise<Client>;
@@ -120,8 +120,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Clients
-  async getClients(searchTerm?: string): Promise<Client[]> {
-    return await db.select().from(clients).where(searchTerm ? sql`${clients.name} ILIKE ${'%' + searchTerm + '%'}` : undefined);
+  async getClients(searchTerm?: string, statusFilter?: string): Promise<Client[]> {
+    const conditions = [];
+    
+    // Adicionar filtro de busca se fornecido
+    if (searchTerm && searchTerm.trim() !== '') {
+      conditions.push(
+        or(
+          ilike(clients.name, `%${searchTerm}%`),
+          ilike(clients.cnpj, `%${searchTerm}%`),
+          ilike(clients.contactName, `%${searchTerm}%`)
+        )
+      );
+    }
+    
+    // Adicionar filtro de status se fornecido
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        conditions.push(eq(clients.isActive, 1));
+      } else if (statusFilter === 'inactive') {
+        conditions.push(eq(clients.isActive, 0));
+      }
+    }
+    
+    // Aplicar condições se existirem
+    if (conditions.length > 0) {
+      return await db.select().from(clients).where(and(...conditions));
+    }
+    
+    return await db.select().from(clients);
   }
 
   async getClientByCnpj(cnpj: string): Promise<Client | null> {
