@@ -12,11 +12,16 @@ import {
   InsertStockCount,
   InsertUser,
   ConsignmentWithDetails,
-  clients as clientsTable,
-  DashboardStats
+  DashboardStats,
+  clients,
+  products,
+  consignments,
+  consignmentItems,
+  stockCounts,
+  users
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql, and, desc, count, sum } from "drizzle-orm";
 
 export interface IStorage {
   // Clients
@@ -66,379 +71,558 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private clients: Map<number, Client>;
-  private products: Map<number, Product>;
-  private consignments: Map<number, Consignment>;
-  private consignmentItems: Map<number, ConsignmentItem>;
-  private stockCounts: Map<number, StockCount>;
-  private users: Map<number, User>;
-  private currentId: { [key: string]: number };
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.clients = new Map();
-    this.products = new Map();
-    this.consignments = new Map();
-    this.consignmentItems = new Map();
-    this.stockCounts = new Map();
-    this.users = new Map();
-    this.currentId = {
-      clients: 1,
-      products: 1,
-      consignments: 1,
-      consignmentItems: 1,
-      stockCounts: 1,
-      users: 1,
-    };
+    // Initialize default users if not exists
+    this.initializeDefaultUsers();
+  }
 
-    // Create default users
-    this.createUser({
-      name: "Administrador do Sistema",
-      email: "admin@grandcru.com",
-      password: "admin123",
-      role: "admin",
-      isActive: 1,
-    });
-
-    this.createUser({
-      name: "João Silva",
-      email: "joao@grandcru.com", 
-      password: "manager123",
-      role: "manager",
-      isActive: 1,
-    });
-
-    this.createUser({
-      name: "Maria Santos",
-      email: "maria@grandcru.com",
-      password: "user123",
-      role: "user", 
-      isActive: 1,
-    });
+  private async initializeDefaultUsers() {
+    try {
+      const existingUsers = await db.select().from(users).limit(1);
+      if (existingUsers.length === 0) {
+        // Create default users
+        await db.insert(users).values([
+          {
+            name: "Administrador do Sistema",
+            email: "admin@grandcru.com",
+            password: "admin123",
+            role: "admin",
+            isActive: 1,
+          },
+          {
+            name: "João Silva",
+            email: "joao@grandcru.com", 
+            password: "manager123",
+            role: "manager",
+            isActive: 1,
+          },
+          {
+            name: "Maria Santos",
+            email: "maria@grandcru.com",
+            password: "user123",
+            role: "user", 
+            isActive: 1,
+          }
+        ]);
+      }
+    } catch (error) {
+      console.log("Error initializing default users:", error);
+    }
   }
 
   // Clients
   async getClients(): Promise<Client[]> {
-     return await db.select().from(clientsTable);
-    // return Array.from(this.clients.values());
+    return await db.select().from(clients);
   }
 
   async getClientByCnpj(cnpj: string): Promise<Client | null> {
     const client = await db
       .select()
-      .from(clientsTable)
-      .where(eq(clientsTable.cnpj, cnpj))
+      .from(clients)
+      .where(eq(clients.cnpj, cnpj))
       .limit(1);
 
     return client[0] || null;
   }
 
   async getClient(id: number): Promise<Client | undefined> {
-    return this.clients.get(id);
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client || undefined;
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    // const id = this.currentId.clients++;
-    // const client: Client = { ...insertClient, id, isActive: 1 };
-    // this.clients.set(id, client);
     const [client] = await db
-    .insert(clientsTable)
-    .values(insertClient)
-    .returning();
+      .insert(clients)
+      .values(insertClient)
+      .returning();
     return client;
   }
 
   async updateClient(id: number, clientData: Partial<InsertClient>): Promise<Client> {
-    const existing = this.clients.get(id);
-    if (!existing) throw new Error("Client not found");
+    const [updated] = await db
+      .update(clients)
+      .set(clientData)
+      .where(eq(clients.id, id))
+      .returning();
     
-    const updated = { ...existing, ...clientData };
-    this.clients.set(id, updated);
+    if (!updated) throw new Error("Client not found");
     return updated;
   }
 
   async deleteClient(id: number): Promise<boolean> {
-    return this.clients.delete(id);
+    const result = await db.delete(clients).where(eq(clients.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Products
   async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const id = this.currentId.products++;
-    const product: Product = { 
-      ...insertProduct, 
-      id,
-      volume: insertProduct.volume || "750ml",
-      photo: insertProduct.photo || null
-    };
-    this.products.set(id, product);
+    const [product] = await db
+      .insert(products)
+      .values({
+        ...insertProduct,
+        volume: insertProduct.volume || "750ml",
+        photo: insertProduct.photo || null
+      })
+      .returning();
     return product;
   }
 
   async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product> {
-    const existing = this.products.get(id);
-    if (!existing) throw new Error("Product not found");
+    const [updated] = await db
+      .update(products)
+      .set(productData)
+      .where(eq(products.id, id))
+      .returning();
     
-    const updated = { ...existing, ...productData };
-    this.products.set(id, updated);
+    if (!updated) throw new Error("Product not found");
     return updated;
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    return this.products.delete(id);
+    const result = await db.delete(products).where(eq(products.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Consignments
   async getConsignments(): Promise<ConsignmentWithDetails[]> {
-    const consignments = Array.from(this.consignments.values());
-    const result: ConsignmentWithDetails[] = [];
+    const result = await db
+      .select({
+        id: consignments.id,
+        clientId: consignments.clientId,
+        date: consignments.date,
+        status: consignments.status,
+        totalValue: consignments.totalValue,
+        client: {
+          id: clients.id,
+          name: clients.name,
+          cnpj: clients.cnpj,
+          address: clients.address,
+          phone: clients.phone,
+          contactName: clients.contactName,
+          isActive: clients.isActive,
+        }
+      })
+      .from(consignments)
+      .leftJoin(clients, eq(consignments.clientId, clients.id))
+      .orderBy(desc(consignments.date));
 
-    for (const consignment of consignments) {
-      const client = this.clients.get(consignment.clientId);
-      if (!client) continue;
+    const consignmentsWithItems: ConsignmentWithDetails[] = [];
 
-      const items = Array.from(this.consignmentItems.values())
-        .filter(item => item.consignmentId === consignment.id)
-        .map(item => {
-          const product = this.products.get(item.productId);
-          return { ...item, product: product! };
-        });
+    for (const row of result) {
+      if (!row.client) continue;
 
-      result.push({ ...consignment, client, items });
+      const items = await db
+        .select({
+          id: consignmentItems.id,
+          consignmentId: consignmentItems.consignmentId,
+          productId: consignmentItems.productId,
+          quantity: consignmentItems.quantity,
+          unitPrice: consignmentItems.unitPrice,
+          product: {
+            id: products.id,
+            name: products.name,
+            country: products.country,
+            type: products.type,
+            unitPrice: products.unitPrice,
+            volume: products.volume,
+            photo: products.photo,
+          }
+        })
+        .from(consignmentItems)
+        .leftJoin(products, eq(consignmentItems.productId, products.id))
+        .where(eq(consignmentItems.consignmentId, row.id));
+
+      consignmentsWithItems.push({
+        id: row.id,
+        clientId: row.clientId,
+        date: row.date,
+        status: row.status,
+        totalValue: row.totalValue,
+        client: row.client,
+        items: items.filter(item => item.product).map(item => ({
+          id: item.id,
+          consignmentId: item.consignmentId,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          product: item.product!
+        }))
+      });
     }
 
-    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return consignmentsWithItems;
   }
 
   async getConsignment(id: number): Promise<ConsignmentWithDetails | undefined> {
-    const consignment = this.consignments.get(id);
-    if (!consignment) return undefined;
+    const [consignmentRow] = await db
+      .select({
+        id: consignments.id,
+        clientId: consignments.clientId,
+        date: consignments.date,
+        status: consignments.status,
+        totalValue: consignments.totalValue,
+        client: {
+          id: clients.id,
+          name: clients.name,
+          cnpj: clients.cnpj,
+          address: clients.address,
+          phone: clients.phone,
+          contactName: clients.contactName,
+          isActive: clients.isActive,
+        }
+      })
+      .from(consignments)
+      .leftJoin(clients, eq(consignments.clientId, clients.id))
+      .where(eq(consignments.id, id));
 
-    const client = this.clients.get(consignment.clientId);
-    if (!client) return undefined;
+    if (!consignmentRow || !consignmentRow.client) return undefined;
 
-    const items = Array.from(this.consignmentItems.values())
-      .filter(item => item.consignmentId === id)
-      .map(item => {
-        const product = this.products.get(item.productId);
-        return { ...item, product: product! };
-      });
+    const items = await db
+      .select({
+        id: consignmentItems.id,
+        consignmentId: consignmentItems.consignmentId,
+        productId: consignmentItems.productId,
+        quantity: consignmentItems.quantity,
+        unitPrice: consignmentItems.unitPrice,
+        product: {
+          id: products.id,
+          name: products.name,
+          country: products.country,
+          type: products.type,
+          unitPrice: products.unitPrice,
+          volume: products.volume,
+          photo: products.photo,
+        }
+      })
+      .from(consignmentItems)
+      .leftJoin(products, eq(consignmentItems.productId, products.id))
+      .where(eq(consignmentItems.consignmentId, id));
 
-    return { ...consignment, client, items };
+    return {
+      id: consignmentRow.id,
+      clientId: consignmentRow.clientId,
+      date: consignmentRow.date,
+      status: consignmentRow.status,
+      totalValue: consignmentRow.totalValue,
+      client: consignmentRow.client,
+      items: items.filter(item => item.product).map(item => ({
+        id: item.id,
+        consignmentId: item.consignmentId,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        product: item.product!
+      }))
+    };
   }
 
   async createConsignment(data: InsertConsignment & { items: InsertConsignmentItem[] }): Promise<ConsignmentWithDetails> {
-    const id = this.currentId.consignments++;
-    
     // Calculate total value
     const totalValue = data.items.reduce((sum, item) => 
       sum + (parseFloat(item.unitPrice) * item.quantity), 0
     ).toFixed(2);
 
-    const consignment: Consignment = {
-      id,
-      clientId: data.clientId,
-      date: new Date(),
-      status: "pending",
-      totalValue,
-    };
-
-    this.consignments.set(id, consignment);
+    // Create consignment
+    const [consignment] = await db
+      .insert(consignments)
+      .values({
+        clientId: data.clientId,
+        totalValue,
+      })
+      .returning();
 
     // Create consignment items
-    for (const itemData of data.items) {
-      const itemId = this.currentId.consignmentItems++;
-      const item: ConsignmentItem = {
-        ...itemData,
-        id: itemId,
-        consignmentId: id,
-      };
-      this.consignmentItems.set(itemId, item);
+    if (data.items.length > 0) {
+      await db
+        .insert(consignmentItems)
+        .values(
+          data.items.map(item => ({
+            ...item,
+            consignmentId: consignment.id,
+          }))
+        );
     }
 
-    const result = await this.getConsignment(id);
+    const result = await this.getConsignment(consignment.id);
     if (!result) throw new Error("Failed to create consignment");
     return result;
   }
 
   async updateConsignment(id: number, consignmentData: Partial<InsertConsignment>): Promise<ConsignmentWithDetails> {
-    const existing = this.consignments.get(id);
-    if (!existing) throw new Error("Consignment not found");
+    const [updated] = await db
+      .update(consignments)
+      .set(consignmentData)
+      .where(eq(consignments.id, id))
+      .returning();
     
-    const updated = { ...existing, ...consignmentData };
-    this.consignments.set(id, updated);
+    if (!updated) throw new Error("Consignment not found");
+    
     const result = await this.getConsignment(id);
     if (!result) throw new Error("Failed to update consignment");
     return result;
   }
 
   async deleteConsignment(id: number): Promise<boolean> {
-    // Delete associated items
-    const items = Array.from(this.consignmentItems.values())
-      .filter(item => item.consignmentId === id);
+    // Delete associated items first
+    await db.delete(consignmentItems).where(eq(consignmentItems.consignmentId, id));
     
-    items.forEach(item => this.consignmentItems.delete(item.id));
-    
-    return this.consignments.delete(id);
+    // Delete consignment
+    const result = await db.delete(consignments).where(eq(consignments.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Stock Counts
   async getStockCounts(clientId?: number): Promise<StockCount[]> {
-    const counts = Array.from(this.stockCounts.values());
     if (clientId) {
-      return counts.filter(count => count.clientId === clientId);
+      return await db.select().from(stockCounts).where(eq(stockCounts.clientId, clientId));
     }
-    return counts;
+    return await db.select().from(stockCounts);
   }
 
   async createStockCount(insertStockCount: InsertStockCount): Promise<StockCount> {
-    const id = this.currentId.stockCounts++;
     const quantitySold = insertStockCount.quantitySent - insertStockCount.quantityRemaining;
     const totalSold = (quantitySold * parseFloat(insertStockCount.unitPrice)).toFixed(2);
     
-    const stockCount: StockCount = {
-      ...insertStockCount,
-      id,
-      countDate: new Date(),
-      quantitySold,
-      totalSold,
-    };
+    const [stockCount] = await db
+      .insert(stockCounts)
+      .values({
+        ...insertStockCount,
+        quantitySold,
+        totalSold,
+      })
+      .returning();
     
-    this.stockCounts.set(id, stockCount);
     return stockCount;
   }
 
   async updateStockCount(id: number, stockCountData: Partial<InsertStockCount>): Promise<StockCount> {
-    const existing = this.stockCounts.get(id);
+    const [existing] = await db.select().from(stockCounts).where(eq(stockCounts.id, id));
     if (!existing) throw new Error("Stock count not found");
     
-    const updated = { ...existing, ...stockCountData };
-    
-    // Recalculate derived fields
+    // Calculate derived fields if necessary
+    const updateData: any = { ...stockCountData };
     if (stockCountData.quantityRemaining !== undefined || stockCountData.quantitySent !== undefined) {
-      updated.quantitySold = updated.quantitySent - updated.quantityRemaining;
-      updated.totalSold = (updated.quantitySold * parseFloat(updated.unitPrice)).toFixed(2);
+      const quantitySent = stockCountData.quantitySent ?? existing.quantitySent;
+      const quantityRemaining = stockCountData.quantityRemaining ?? existing.quantityRemaining;
+      const unitPrice = stockCountData.unitPrice ?? existing.unitPrice;
+      
+      updateData.quantitySold = quantitySent - quantityRemaining;
+      updateData.totalSold = (updateData.quantitySold * parseFloat(unitPrice)).toFixed(2);
     }
     
-    this.stockCounts.set(id, updated);
+    const [updated] = await db
+      .update(stockCounts)
+      .set(updateData)
+      .where(eq(stockCounts.id, id))
+      .returning();
+    
+    if (!updated) throw new Error("Failed to update stock count");
     return updated;
   }
 
   // Dashboard
   async getDashboardStats(): Promise<DashboardStats> {
-    const consignments = Array.from(this.consignments.values());
-    const stockCounts = Array.from(this.stockCounts.values());
-    const clients = Array.from(this.clients.values());
-    const products = Array.from(this.products.values());
+    // Get total consigned amount
+    const [totalConsignedResult] = await db
+      .select({ 
+        total: sql<string>`COALESCE(SUM(CAST(${consignments.totalValue} AS DECIMAL)), 0)` 
+      })
+      .from(consignments);
 
-    const totalConsigned = consignments
-      .reduce((sum, c) => sum + parseFloat(c.totalValue), 0)
+    // Get monthly sales amount
+    const [monthlySalesResult] = await db
+      .select({ 
+        total: sql<string>`COALESCE(SUM(CAST(${stockCounts.totalSold} AS DECIMAL)), 0)` 
+      })
+      .from(stockCounts);
+
+    // Get active clients count
+    const [activeClientsResult] = await db
+      .select({ count: count() })
+      .from(clients)
+      .where(eq(clients.isActive, 1));
+
+    // Get total products count
+    const [totalProductsResult] = await db
+      .select({ count: count() })
+      .from(products);
+
+    const totalConsigned = parseFloat(totalConsignedResult.total)
       .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    const monthlySales = stockCounts
-      .reduce((sum, sc) => sum + parseFloat(sc.totalSold), 0)
+    const monthlySales = parseFloat(monthlySalesResult.total)
       .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const activeClients = clients.filter(c => c.isActive === 1).length;
-    // const [activeClients] = await db
-    //   .select({ count: count() })
-    //   .from(clientsTable)
-    //   .where(eq(clientsTable.isActive, 1));
-
-    const totalProducts = products.length;
 
     return {
       totalConsigned,
       monthlySales,
-      activeClients,
-      totalProducts,
+      activeClients: activeClientsResult.count,
+      totalProducts: totalProductsResult.count,
     };
   }
 
   // Reports
   async getSalesByClient(startDate?: Date, endDate?: Date): Promise<any[]> {
-    const stockCounts = Array.from(this.stockCounts.values());
-    const clientSales = new Map<number, { client: Client, totalSales: number, quantitySold: number }>();
+    const baseQuery = db
+      .select({
+        clientId: stockCounts.clientId,
+        client: {
+          id: clients.id,
+          name: clients.name,
+          cnpj: clients.cnpj,
+          address: clients.address,
+          phone: clients.phone,
+          contactName: clients.contactName,
+          isActive: clients.isActive,
+        },
+        totalSales: sql<string>`SUM(CAST(${stockCounts.totalSold} AS DECIMAL))`,
+        quantitySold: sql<number>`SUM(${stockCounts.quantitySold})`,
+      })
+      .from(stockCounts)
+      .leftJoin(clients, eq(stockCounts.clientId, clients.id));
 
-    for (const count of stockCounts) {
-      if (startDate && count.countDate < startDate) continue;
-      if (endDate && count.countDate > endDate) continue;
-
-      const client = this.clients.get(count.clientId);
-      if (!client) continue;
-
-      const existing = clientSales.get(count.clientId) || { client, totalSales: 0, quantitySold: 0 };
-      existing.totalSales += parseFloat(count.totalSold);
-      existing.quantitySold += count.quantitySold;
-      clientSales.set(count.clientId, existing);
+    // Apply date filters
+    const conditions = [];
+    if (startDate) {
+      conditions.push(sql`${stockCounts.countDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${stockCounts.countDate} <= ${endDate}`);
+    }
+    
+    let query = baseQuery;
+    if (conditions.length === 1) {
+      query = baseQuery.where(conditions[0]);
+    } else if (conditions.length === 2) {
+      query = baseQuery.where(and(...conditions));
     }
 
-    return Array.from(clientSales.values())
-      .sort((a, b) => b.totalSales - a.totalSales);
+    const result = await query
+      .groupBy(stockCounts.clientId, clients.id, clients.name, clients.cnpj, clients.address, clients.phone, clients.contactName, clients.isActive)
+      .orderBy(sql`SUM(CAST(${stockCounts.totalSold} AS DECIMAL)) DESC`);
+    
+    return result
+      .filter(row => row.client)
+      .map(row => ({
+        client: row.client!,
+        totalSales: parseFloat(row.totalSales),
+        quantitySold: row.quantitySold,
+      }));
   }
 
   async getSalesByProduct(startDate?: Date, endDate?: Date): Promise<any[]> {
-    const stockCounts = Array.from(this.stockCounts.values());
-    const productSales = new Map<number, { product: Product, totalSales: number, quantitySold: number }>();
+    const baseQuery = db
+      .select({
+        productId: stockCounts.productId,
+        product: {
+          id: products.id,
+          name: products.name,
+          country: products.country,
+          type: products.type,
+          unitPrice: products.unitPrice,
+          volume: products.volume,
+          photo: products.photo,
+        },
+        totalSales: sql<string>`SUM(CAST(${stockCounts.totalSold} AS DECIMAL))`,
+        quantitySold: sql<number>`SUM(${stockCounts.quantitySold})`,
+      })
+      .from(stockCounts)
+      .leftJoin(products, eq(stockCounts.productId, products.id));
 
-    for (const count of stockCounts) {
-      if (startDate && count.countDate < startDate) continue;
-      if (endDate && count.countDate > endDate) continue;
-
-      const product = this.products.get(count.productId);
-      if (!product) continue;
-
-      const existing = productSales.get(count.productId) || { product, totalSales: 0, quantitySold: 0 };
-      existing.totalSales += parseFloat(count.totalSold);
-      existing.quantitySold += count.quantitySold;
-      productSales.set(count.productId, existing);
+    // Apply date filters
+    const conditions = [];
+    if (startDate) {
+      conditions.push(sql`${stockCounts.countDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${stockCounts.countDate} <= ${endDate}`);
+    }
+    
+    let query = baseQuery;
+    if (conditions.length === 1) {
+      query = baseQuery.where(conditions[0]);
+    } else if (conditions.length === 2) {
+      query = baseQuery.where(and(...conditions));
     }
 
-    return Array.from(productSales.values())
-      .sort((a, b) => b.totalSales - a.totalSales);
+    const result = await query
+      .groupBy(stockCounts.productId, products.id, products.name, products.country, products.type, products.unitPrice, products.volume, products.photo)
+      .orderBy(sql`SUM(CAST(${stockCounts.totalSold} AS DECIMAL)) DESC`);
+    
+    return result
+      .filter(row => row.product)
+      .map(row => ({
+        product: row.product!,
+        totalSales: parseFloat(row.totalSales),
+        quantitySold: row.quantitySold,
+      }));
   }
 
   async getCurrentStock(): Promise<any[]> {
-    const consignmentItems = Array.from(this.consignmentItems.values());
-    const stockCounts = Array.from(this.stockCounts.values());
-    const currentStock = new Map<string, any>();
+    // Get all consignment items with product info
+    const sentItems = await db
+      .select({
+        productId: consignmentItems.productId,
+        quantity: consignmentItems.quantity,
+        clientId: consignments.clientId,
+        product: {
+          id: products.id,
+          name: products.name,
+          country: products.country,
+          type: products.type,
+          unitPrice: products.unitPrice,
+          volume: products.volume,
+          photo: products.photo,
+        }
+      })
+      .from(consignmentItems)
+      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .leftJoin(products, eq(consignmentItems.productId, products.id));
 
-    for (const item of consignmentItems) {
-      const product = this.products.get(item.productId);
-      const consignment = this.consignments.get(item.consignmentId);
-      if (!product || !consignment) continue;
+    // Get all stock counts
+    const soldItems = await db.select().from(stockCounts);
 
-      const key = `${item.productId}`;
-      const existing = currentStock.get(key) || { 
-        product, 
-        totalSent: 0, 
-        totalRemaining: 0, 
-        clientCount: new Set() 
+    // Calculate current stock
+    const stockMap = new Map<number, any>();
+
+    // Process sent items
+    for (const item of sentItems) {
+      if (!item.product) continue;
+      
+      const existing = stockMap.get(item.productId) || {
+        product: item.product,
+        totalSent: 0,
+        totalRemaining: 0,
+        clientCount: new Set(),
       };
       
       existing.totalSent += item.quantity;
-      existing.clientCount.add(consignment.clientId);
-      currentStock.set(key, existing);
+      existing.clientCount.add(item.clientId);
+      stockMap.set(item.productId, existing);
     }
 
     // Subtract sold quantities
-    for (const count of stockCounts) {
-      const key = `${count.productId}`;
-      const existing = currentStock.get(key);
+    for (const count of soldItems) {
+      const existing = stockMap.get(count.productId);
       if (existing) {
-        existing.totalRemaining = existing.totalSent - count.quantitySold;
+        existing.totalRemaining = Math.max(0, existing.totalSent - count.quantitySold);
       }
     }
 
-    return Array.from(currentStock.values()).map(item => ({
-      ...item,
+    return Array.from(stockMap.values()).map(item => ({
+      product: item.product,
+      totalSent: item.totalSent,
+      totalRemaining: item.totalRemaining,
       clientCount: item.clientCount.size,
       value: item.totalRemaining * parseFloat(item.product.unitPrice)
     }));
@@ -446,40 +630,54 @@ export class MemStorage implements IStorage {
 
   // Inventory Management
   async getClientInventory(clientId: number): Promise<any[]> {
-    // Get all consignment items for this client
-    const consignments = Array.from(this.consignments.values())
-      .filter(c => c.clientId === clientId);
-    
+    // Get all consignment items for this client with product info
+    const sentItems = await db
+      .select({
+        productId: consignmentItems.productId,
+        quantity: consignmentItems.quantity,
+        consignmentDate: consignments.date,
+        product: {
+          id: products.id,
+          name: products.name,
+          country: products.country,
+          type: products.type,
+          unitPrice: products.unitPrice,
+          volume: products.volume,
+          photo: products.photo,
+        }
+      })
+      .from(consignmentItems)
+      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .leftJoin(products, eq(consignmentItems.productId, products.id))
+      .where(eq(consignments.clientId, clientId));
+
+    // Get stock counts for this client
+    const clientStockCounts = await db
+      .select()
+      .from(stockCounts)
+      .where(eq(stockCounts.clientId, clientId));
+
+    // Process inventory
     const inventory = new Map<number, any>();
 
-    for (const consignment of consignments) {
-      const items = Array.from(this.consignmentItems.values())
-        .filter(item => item.consignmentId === consignment.id);
+    for (const item of sentItems) {
+      if (!item.product) continue;
 
-      for (const item of items) {
-        const product = this.products.get(item.productId);
-        if (!product) continue;
+      const existing = inventory.get(item.productId) || {
+        product: item.product,
+        totalSent: 0,
+        totalCounted: 0,
+        totalSold: 0,
+        lastCountDate: null,
+        consignmentDate: item.consignmentDate,
+      };
 
-        const key = item.productId;
-        const existing = inventory.get(key) || {
-          product,
-          totalSent: 0,
-          totalCounted: 0,
-          totalSold: 0,
-          lastCountDate: null,
-          consignmentDate: consignment.date
-        };
-
-        existing.totalSent += item.quantity;
-        inventory.set(key, existing);
-      }
+      existing.totalSent += item.quantity;
+      inventory.set(item.productId, existing);
     }
 
     // Add stock count information
-    const stockCounts = Array.from(this.stockCounts.values())
-      .filter(sc => sc.clientId === clientId);
-
-    for (const count of stockCounts) {
+    for (const count of clientStockCounts) {
       const existing = inventory.get(count.productId);
       if (existing) {
         existing.totalCounted = count.quantityRemaining;
@@ -494,32 +692,40 @@ export class MemStorage implements IStorage {
 
   async calculateStockDifference(clientId: number, productId: number): Promise<any> {
     // Get total sent for this client and product
-    const consignments = Array.from(this.consignments.values())
-      .filter(c => c.clientId === clientId);
-    
-    let totalSent = 0;
-    for (const consignment of consignments) {
-      const items = Array.from(this.consignmentItems.values())
-        .filter(item => item.consignmentId === consignment.id && item.productId === productId);
-      
-      totalSent += items.reduce((sum, item) => sum + item.quantity, 0);
-    }
+    const [totalSentResult] = await db
+      .select({ 
+        total: sql<number>`COALESCE(SUM(${consignmentItems.quantity}), 0)` 
+      })
+      .from(consignmentItems)
+      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .where(and(
+        eq(consignments.clientId, clientId),
+        eq(consignmentItems.productId, productId)
+      ));
+
+    const totalSent = totalSentResult.total;
 
     // Get latest stock count
-    const stockCounts = Array.from(this.stockCounts.values())
-      .filter(sc => sc.clientId === clientId && sc.productId === productId)
-      .sort((a, b) => new Date(b.countDate).getTime() - new Date(a.countDate).getTime());
+    const [latestCount] = await db
+      .select()
+      .from(stockCounts)
+      .where(and(
+        eq(stockCounts.clientId, clientId),
+        eq(stockCounts.productId, productId)
+      ))
+      .orderBy(desc(stockCounts.countDate))
+      .limit(1);
 
-    const latestCount = stockCounts[0];
     const remainingStock = latestCount ? latestCount.quantityRemaining : totalSent;
     const soldQuantity = totalSent - remainingStock;
 
-    const product = this.products.get(productId);
-    const client = this.clients.get(clientId);
+    // Get product and client info
+    const [product] = await db.select().from(products).where(eq(products.id, productId));
+    const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
 
     return {
-      client,
-      product,
+      client: client || null,
+      product: product || null,
       totalSent,
       remainingStock,
       soldQuantity,
@@ -530,43 +736,46 @@ export class MemStorage implements IStorage {
 
   // Users
   async getUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId.users++;
-    const user: User = { 
-      ...insertUser, 
-      id,
-      isActive: insertUser.isActive || 1,
-      role: insertUser.role || "user",
-      createdAt: new Date(),
-      lastLogin: null
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        isActive: insertUser.isActive || 1,
+        role: insertUser.role || "user",
+      })
+      .returning();
     return user;
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
-    const existing = this.users.get(id);
-    if (!existing) throw new Error("User not found");
+    const [updated] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
     
-    const updated = { ...existing, ...userData };
-    this.users.set(id, updated);
+    if (!updated) throw new Error("User not found");
     return updated;
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    return this.users.delete(id);
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount || 0) > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
