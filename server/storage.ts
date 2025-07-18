@@ -12,8 +12,11 @@ import {
   InsertStockCount,
   InsertUser,
   ConsignmentWithDetails,
+  clients as clientsTable,
   DashboardStats
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Clients
@@ -116,7 +119,18 @@ export class MemStorage implements IStorage {
 
   // Clients
   async getClients(): Promise<Client[]> {
-    return Array.from(this.clients.values());
+     return await db.select().from(clientsTable);
+    // return Array.from(this.clients.values());
+  }
+
+  async getClientByCnpj(cnpj: string): Promise<Client | null> {
+    const client = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.cnpj, cnpj))
+      .limit(1);
+
+    return client[0] || null;
   }
 
   async getClient(id: number): Promise<Client | undefined> {
@@ -124,9 +138,13 @@ export class MemStorage implements IStorage {
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    const id = this.currentId.clients++;
-    const client: Client = { ...insertClient, id, isActive: 1 };
-    this.clients.set(id, client);
+    // const id = this.currentId.clients++;
+    // const client: Client = { ...insertClient, id, isActive: 1 };
+    // this.clients.set(id, client);
+    const [client] = await db
+    .insert(clientsTable)
+    .values(insertClient)
+    .returning();
     return client;
   }
 
@@ -329,6 +347,11 @@ export class MemStorage implements IStorage {
       .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     const activeClients = clients.filter(c => c.isActive === 1).length;
+    // const [activeClients] = await db
+    //   .select({ count: count() })
+    //   .from(clientsTable)
+    //   .where(eq(clientsTable.isActive, 1));
+
     const totalProducts = products.length;
 
     return {

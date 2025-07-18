@@ -1,9 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertClientSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClientSchema } from "@shared/schema";
 import type { Client, InsertClient } from "@shared/schema";
 
 interface ClientFormProps {
@@ -15,7 +15,7 @@ interface ClientFormProps {
 
 export default function ClientForm({ client, onSubmit, onCancel, isLoading }: ClientFormProps) {
   const form = useForm<InsertClient>({
-    resolver: zodResolver(insertClientSchema),
+    resolver: zodResolver(createClientSchema),
     defaultValues: {
       name: client?.name || "",
       cnpj: client?.cnpj || "",

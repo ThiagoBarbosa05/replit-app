@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertClientSchema, insertProductSchema, insertConsignmentSchema, insertStockCountSchema, insertUserSchema } from "@shared/schema";
+import { createClientSchema } from "@shared/schemas";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Clients
@@ -10,6 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClients();
       res.json(clients);
     } catch (error) {
+      console.log(error)
       res.status(500).json({ message: "Failed to fetch clients" });
     }
   });
@@ -29,10 +31,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/clients", async (req, res) => {
     try {
-      const clientData = insertClientSchema.parse(req.body);
+      // const clientData = insertClientSchema.parse(req.body);
+      const clientData = createClientSchema.parse(req.body)
+      const existingClient = await storage.getClientByCnpj(clientData.cnpj);
+
+      if (existingClient) {
+        return res
+          .status(400)
+          .json({ message: `Cliente com o CNPJ ${clientData.cnpj} já existe` });
+      }
       const client = await storage.createClient(clientData);
       res.status(201).json(client);
     } catch (error) {
+      console.log(error)
       res.status(400).json({ message: "Invalid client data", error });
     }
   });
