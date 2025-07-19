@@ -34,6 +34,7 @@ interface ConsignmentFormProps {
 
 export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoading }: ConsignmentFormProps) {
   const [selectedClientId, setSelectedClientId] = useState<string>(consignment?.clientId?.toString() || "");
+  const [selectedProductIds, setSelectedProductIds] = useState<{[key: number]: string}>({});
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"]
@@ -60,11 +61,21 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
     if (consignment) {
       setSelectedClientId(consignment.clientId.toString());
       form.setValue("clientId", consignment.clientId);
-      form.setValue("items", consignment.items.map(item => ({
+      
+      const items = consignment.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-      })));
+      }));
+      
+      form.setValue("items", items);
+      
+      // Set selected product IDs
+      const productSelections: {[key: number]: string} = {};
+      consignment.items.forEach((item, index) => {
+        productSelections[index] = item.productId.toString();
+      });
+      setSelectedProductIds(productSelections);
     }
   }, [consignment, form]);
 
@@ -78,7 +89,25 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
   };
 
   const addItem = () => {
+    const newIndex = fields.length;
     append({ productId: 0, quantity: 1, unitPrice: "0" });
+    setSelectedProductIds(prev => ({ ...prev, [newIndex]: "" }));
+  };
+
+  const removeItem = (index: number) => {
+    remove(index);
+    setSelectedProductIds(prev => {
+      const newState = { ...prev };
+      delete newState[index];
+      // Reindex remaining items
+      const reindexed: {[key: number]: string} = {};
+      Object.entries(newState).forEach(([key, value]) => {
+        const oldIndex = parseInt(key);
+        const newIndex = oldIndex > index ? oldIndex - 1 : oldIndex;
+        reindexed[newIndex] = value;
+      });
+      return reindexed;
+    });
   };
 
   const calculateTotal = () => {
@@ -134,7 +163,7 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                   <div>
                     <Label>Produto</Label>
                     <Select 
-                      value={field.productId?.toString() || ""}
+                      value={selectedProductIds[index] || ""}
                       onValueChange={(value) => {
                         const product = products.find(p => p.id === parseInt(value));
                         form.setValue(`items.${index}.productId`, parseInt(value));
@@ -142,6 +171,7 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                           form.setValue(`items.${index}.unitPrice`, product.unitPrice);
                         }
                         form.clearErrors(`items.${index}.productId`);
+                        setSelectedProductIds(prev => ({ ...prev, [index]: value }));
                       }}
                     >
                       <SelectTrigger>
@@ -197,7 +227,7 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                         type="button" 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => remove(index)}
+                        onClick={() => removeItem(index)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
