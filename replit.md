@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Server Code Refactoring - Controllers, Services, and Repositories Pattern (July 19, 2025)
+- ✓ Completely refactored server architecture following industry best practices
+- ✓ Created Controllers layer for handling HTTP requests and responses
+- ✓ Implemented Services layer for business logic and orchestration
+- ✓ Built Repositories layer for data access and database operations
+- ✓ Separated concerns cleanly across architectural layers
+- ✓ Maintained all existing functionality while improving code organization
+- ✓ Enhanced error handling and logging across all endpoints
+- ✓ Preserved backward compatibility for legacy inventory endpoints
+- ✓ Applied dependency injection pattern for better testability
+- ✓ Improved code readability and maintainability significantly
+
 ### Page-Based Architecture Implementation (July 19, 2025)
 - ✓ Transformed tab-based dashboard into separate React pages for better code organization
 - ✓ Created dedicated page components: DashboardOverview, ClientsPage, ProductsPage, ConsignmentsPage, InventoryPage, ReportsPage, UsersPage
@@ -100,16 +112,22 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js for REST API
+- **Architecture Pattern**: Controllers, Services, and Repositories (3-layer architecture)
 - **Database**: PostgreSQL with Drizzle ORM
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **API Pattern**: RESTful endpoints with JSON responses
 - **Session Management**: Express sessions with PostgreSQL storage
+- **Code Organization**: Separated concerns with dependency injection
 
 ### Project Structure
 - **Monorepo Layout**: Single repository with separate client/server/shared directories
 - **Shared Types**: Common schemas and types in `/shared` directory
 - **Client**: React application in `/client` directory
-- **Server**: Express API in `/server` directory
+- **Server**: Express API in `/server` directory with clean architecture:
+  - **Controllers**: HTTP request/response handling (`/server/controllers/`)
+  - **Services**: Business logic and orchestration (`/server/services/`)
+  - **Repositories**: Data access layer (`/server/repositories/`)
+  - **Routes**: Endpoint definitions and controller routing (`/server/routes.ts`)
 
 ## Key Components
 
