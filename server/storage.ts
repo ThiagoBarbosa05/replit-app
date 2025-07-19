@@ -508,6 +508,10 @@ export class DatabaseStorage implements IStorage {
     id: number,
     consignmentData: Partial<InsertConsignment>,
   ): Promise<ConsignmentWithDetails> {
+    // Get current consignment to check status change
+    const currentConsignment = await this.getConsignment(id);
+    if (!currentConsignment) throw new Error("Consignment not found");
+
     const [updated] = await db
       .update(consignments)
       .set(consignmentData)
@@ -516,9 +520,61 @@ export class DatabaseStorage implements IStorage {
 
     if (!updated) throw new Error("Consignment not found");
 
+    // If status changed to "delivered", create stock counts for all items
+    if (consignmentData.status === "delivered" && currentConsignment.status !== "delivered") {
+      await this.createStockCountsForDeliveredConsignment(id);
+    }
+
     const result = await this.getConsignment(id);
     if (!result) throw new Error("Failed to update consignment");
     return result;
+  }
+
+  private async createStockCountsForDeliveredConsignment(consignmentId: number): Promise<void> {
+    // Get consignment items
+    const items = await db
+      .select()
+      .from(consignmentItems)
+      .where(eq(consignmentItems.consignmentId, consignmentId));
+
+    // Get consignment info for clientId
+    const [consignment] = await db
+      .select()
+      .from(consignments)
+      .where(eq(consignments.id, consignmentId));
+
+    if (!consignment) return;
+
+    // Create stock count for each item
+    for (const item of items) {
+      // Check if stock count already exists for this consignment item
+      const existingStockCount = await db
+        .select()
+        .from(stockCounts)
+        .where(
+          and(
+            eq(stockCounts.clientId, consignment.clientId),
+            eq(stockCounts.productId, item.productId),
+            eq(stockCounts.consignmentId, consignmentId)
+          )
+        )
+        .limit(1);
+
+      // Only create if doesn't exist
+      if (existingStockCount.length === 0) {
+        await db.insert(stockCounts).values({
+          clientId: consignment.clientId,
+          productId: item.productId,
+          consignmentId: consignmentId,
+          quantitySent: item.quantity,
+          quantityRemaining: item.quantity, // Initially set all as remaining (not sold yet)
+          unitPrice: item.unitPrice,
+          quantitySold: 0,
+          totalSold: "0.00",
+          date: new Date().toISOString(),
+        });
+      }
+    }
   }
 
   async deleteConsignment(id: number): Promise<boolean> {

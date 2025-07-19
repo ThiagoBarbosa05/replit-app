@@ -231,7 +231,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const consignment = await storage.updateConsignment(id, consignmentData);
       res.json(consignment);
     } catch (error) {
+      console.error("Error updating consignment:", error);
       res.status(400).json({ message: "Failed to update consignment", error });
+    }
+  });
+
+  // Update consignment status endpoint
+  app.patch("/api/consignments/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      const consignment = await storage.updateConsignment(id, { status });
+      res.json(consignment);
+    } catch (error) {
+      console.error("Error updating consignment status:", error);
+      res.status(400).json({ message: "Failed to update consignment status", error });
     }
   });
 

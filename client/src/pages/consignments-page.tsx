@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,9 +47,41 @@ export default function ConsignmentsPage() {
     queryKey: ["/api/clients"]
   });
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const openConsignmentDialog = (consignment?: ConsignmentWithDetails) => {
     setSelectedConsignment(consignment || null);
     setConsignmentDialogOpen(true);
+  };
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      const response = await apiRequest("PATCH", `/api/consignments/${id}/status`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
+      toast({
+        title: "Sucesso",
+        description: "Status da consignação atualizado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar status da consignação",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusChange = (consignmentId: number, newStatus: string) => {
+    updateStatusMutation.mutate({ id: consignmentId, status: newStatus });
   };
 
   const formatCurrency = (value: string | number) => {
@@ -211,9 +245,35 @@ export default function ConsignmentsPage() {
                         {formatCurrency(consignment.totalValue)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusColor(consignment.status)}>
-                          {getStatusLabel(consignment.status)}
-                        </Badge>
+                        <Select 
+                          value={consignment.status} 
+                          onValueChange={(value) => handleStatusChange(consignment.id, value)}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+                                Pendente
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="delivered">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                                Entregue
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="completed">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                Concluído
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Button 
