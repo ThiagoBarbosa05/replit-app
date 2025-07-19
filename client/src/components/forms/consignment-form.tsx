@@ -17,7 +17,11 @@ const consignmentFormSchema = z.object({
     productId: z.number().min(1, "Produto é obrigatório"),
     quantity: z.number().min(1, "Quantidade deve ser maior que 0"),
     unitPrice: z.string().min(1, "Preço é obrigatório"),
-  })).min(1, "Pelo menos um produto é obrigatório"),
+  })).min(1, "Pelo menos um produto é obrigatório")
+    .refine((items) => {
+      const productIds = items.map(item => item.productId).filter(id => id > 0);
+      return new Set(productIds).size === productIds.length;
+    }, "Não é possível adicionar o mesmo produto duas vezes"),
 });
 
 interface ConsignmentFormData {
@@ -118,6 +122,15 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
     }, 0);
   };
 
+  const getAvailableProducts = (currentIndex: number) => {
+    const formItems = form.watch("items");
+    const selectedProductIds = formItems
+      .map((item, index) => index !== currentIndex ? item.productId : null)
+      .filter(id => id && id > 0);
+    
+    return products.filter(product => !selectedProductIds.includes(product.id));
+  };
+
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
       <div>
@@ -149,7 +162,13 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
       <div>
         <div className="flex items-center justify-between mb-4">
           <Label>Produtos *</Label>
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={addItem}
+            disabled={getAvailableProducts(fields.length).length === 0}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Produto
           </Button>
@@ -178,11 +197,17 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                         <SelectValue placeholder="Selecione um produto" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
-                            {product.name} - {product.type}
-                          </SelectItem>
-                        ))}
+                        {getAvailableProducts(index).length > 0 ? (
+                          getAvailableProducts(index).map((product) => (
+                            <SelectItem key={product.id} value={product.id.toString()}>
+                              {product.name} - {product.type}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-gray-500">
+                            Todos os produtos já foram selecionados
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     {form.formState.errors.items?.[index]?.productId && (
@@ -238,6 +263,11 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
             </Card>
           ))}
         </div>
+        {form.formState.errors.items && typeof form.formState.errors.items.message === 'string' && (
+          <p className="text-sm text-red-500 mt-2">
+            {form.formState.errors.items.message}
+          </p>
+        )}
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg">

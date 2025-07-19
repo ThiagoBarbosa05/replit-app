@@ -39,6 +39,8 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
 
   if (!client) return null;
 
+  console.log(clientInventory)
+
   // Calcular estatísticas
   const totalConsignments = clientConsignments.length;
   const totalProducts = clientConsignments.reduce((sum, c) => sum + c.items.length, 0);
@@ -139,7 +141,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  <TrendingUp className="w-4 h-4 min-w-4 text-blue-500" />
                   <div>
                     <div className="text-2xl font-bold">{totalConsignments}</div>
                     <div className="text-xs text-gray-500">Consignações</div>
@@ -151,7 +153,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <Package className="w-4 h-4 text-green-500" />
+                  <Package className="w-4 h-4 min-w-4 text-green-500" />
                   <div>
                     <div className="text-2xl font-bold">{totalProducts}</div>
                     <div className="text-xs text-gray-500">Produtos</div>
@@ -163,7 +165,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-purple-500" />
+                  <DollarSign className="w-4 h-4 min-w-4 text-purple-500" />
                   <div>
                     <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
                     <div className="text-xs text-gray-500">Valor Total</div>
@@ -175,7 +177,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-orange-500" />
+                  <TrendingUp className="w-4 h-4 min-w-4 text-orange-500" />
                   <div>
                     <div className="text-2xl font-bold">{totalSold || 0}</div>
                     <div className="text-xs text-gray-500">Vendidos</div>

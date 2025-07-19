@@ -173,7 +173,7 @@ export default function InventoryPage() {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Package className="w-4 h-4 text-gray-500" />
-                          <span>Cliente #{count.clientId}</span>
+                          <span>{count.clientId}</span>
                         </div>
                       </TableCell>
                       <TableCell>Produto #{count.productId}</TableCell>
