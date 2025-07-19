@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertProductSchema, insertConsignmentSchema, insertStockCountSchema, insertUserSchema } from "@shared/schema";
+import { insertClientSchema, insertProductSchema, insertConsignmentSchema, insertStockCountSchema, insertUserSchema, createProductSchema } from "@shared/schema";
 import { createClientSchema } from "@shared/schemas";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -97,9 +97,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const searchName = req.query.name as string | undefined;
+      const typeFilter = req.query.type as string | undefined;
+      const countryFilter = req.query.country as string | undefined;
+
+      const products = await storage.getProducts(
+        searchName,
+        typeFilter,
+        countryFilter
+      );
+
       res.json(products);
     } catch (error) {
+      console.error("Error fetching products:", error);
       res.status(500).json({ message: "Failed to fetch products" });
     }
   });
@@ -119,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const productData = insertProductSchema.parse(req.body);
+      const productData = createProductSchema.parse(req.body);
       const product = await storage.createProduct(productData);
       res.status(201).json(product);
     } catch (error) {

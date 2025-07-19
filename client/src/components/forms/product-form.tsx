@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X, Image } from "lucide-react";
-import { insertProductSchema, type Product, type InsertProduct } from "@shared/schema";
+import { type Product, type InsertProduct, createProductSchema } from "@shared/schema";
 
 interface ProductFormProps {
   product?: Product | null;
@@ -43,10 +43,11 @@ const volumeOptions = [
 
 export default function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductFormProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(product?.photo || null);
+  const [price, setPrice] = useState<string | undefined>(product?.unitPrice || "0,00");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<InsertProduct>({
-    resolver: zodResolver(insertProductSchema),
+    resolver: zodResolver(createProductSchema),
     defaultValues: {
       name: product?.name || "",
       country: product?.country || "",
@@ -56,6 +57,16 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
       photo: product?.photo || null,
     },
   });
+
+  function formatCurrencyInput(value: string): string {
+    const onlyDigits = value.replace(/\D/g, "");
+    const numericValue = parseFloat(onlyDigits) / 100;
+
+    return numericValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -94,7 +105,8 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
   };
 
   const handleSubmit = (data: InsertProduct) => {
-    onSubmit(data);
+    
+  onSubmit({...data, unitPrice: price!.replace("R$", "").replace(",", ".").trim()});
   };
 
   return (
@@ -200,11 +212,16 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
                 <FormLabel>Preço Unitário (R$) *</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     step="0.01" 
-                    min="0" 
-                    placeholder="0,00" 
+                    placeholder={formatCurrencyInput("0,00")} 
                     {...field} 
+                    onChange={(e) => {
+                      const formattedValue = formatCurrencyInput(e.target.value);
+                      setPrice(formattedValue);
+                      field.onChange(e);
+                    }}
+                    value={price}
                   />
                 </FormControl>
                 <FormMessage />
@@ -229,7 +246,7 @@ export default function ProductForm({ product, onSubmit, onCancel, isLoading }: 
                           <img 
                             src={selectedImage} 
                             alt="Preview do produto" 
-                            className="w-full h-48 object-cover rounded-lg"
+                            className="w-full max-w-[360px] mx-auto h-48 object-contain rounded-lg"
                           />
                           <Button
                             type="button"

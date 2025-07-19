@@ -142,3 +142,14 @@ export const createClientSchema = z.object({
   }),
   contactName: z.string().min(1, { message: "Nome do contato é obrigatório" }),
 });
+
+export const createProductSchema = z.object({
+    name: z.string().min(1, {message: "Nome do vinho é obrigatório"}),
+    country: z.string().min(1, {message: "O País do vinho é obrigatório"}),
+    type: z.string().min(1, {message: "Tipo do vinho é obrigatório"}),
+    unitPrice: z.coerce.string().min(1, {message: "Preço unitário deve ser maior que zero"}),
+    volume:  z.string().optional(), // 750ml, 375ml, 187ml
+    photo:  z.string().optional().nullable(), // Base64 encoded image
+});
+
+export type CreateProductSchema = z.infer<typeof createProductSchema>

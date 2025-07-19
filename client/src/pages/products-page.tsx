@@ -17,7 +17,27 @@ export default function ProductsPage() {
   const [countryFilter, setCountryFilter] = useState("all");
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"]
+    queryKey: ["/api/products", searchTerm, typeFilter, countryFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('name', searchTerm);
+      if (typeFilter && typeFilter !== 'all') params.append('type', typeFilter);
+      if (countryFilter && countryFilter !== 'all') params.append('country', countryFilter);
+      
+      const response = await fetch(`/api/products?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    }
+  });
+
+  // Query to get all products for filter options
+  const { data: allProducts = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products/all"],
+    queryFn: async () => {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed to fetch all products');
+      return response.json();
+    }
   });
 
   const openProductDialog = (product?: Product) => {
@@ -30,19 +50,11 @@ export default function ProductsPage() {
     return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  // Filter products based on search and filters
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.type.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "all" || product.type === typeFilter;
-    const matchesCountry = countryFilter === "all" || product.country === countryFilter;
-    
-    return matchesSearch && matchesType && matchesCountry;
-  });
+  // Products are already filtered by the server
+  const filteredProducts = products;
 
-  // Get unique countries for filter
-  const uniqueCountries = [...new Set(products.map(p => p.country))];
+  // Get unique countries for filter from all products
+  const uniqueCountries = [...new Set(allProducts.map(p => p.country))];
 
   return (
     <div className="space-y-6">
@@ -96,11 +108,11 @@ export default function ProductsPage() {
           </div>
 
           <div className="mb-4 text-sm text-gray-600">
-            {productsLoading ? "Carregando..." : `${filteredProducts.length} produto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`}
+            {productsLoading ? "Carregando..." : `${products.length} produto${products.length !== 1 ? 's' : ''} encontrado${products.length !== 1 ? 's' : ''}`}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <Card key={product.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openProductDialog(product)}>
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -109,7 +121,7 @@ export default function ProductsPage() {
                         <img 
                           src={product.photo} 
                           alt={product.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain "
                         />
                       </div>
                     )}
@@ -146,7 +158,7 @@ export default function ProductsPage() {
               </Card>
             ))}
             
-            {filteredProducts.length === 0 && !productsLoading && (
+            {products.length === 0 && !productsLoading && (
               <div className="col-span-full text-center py-12 text-gray-500">
                 {products.length === 0 ? "Nenhum produto cadastrado" : "Nenhum produto encontrado com os filtros aplicados"}
               </div>

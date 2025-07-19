@@ -215,7 +215,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Products
-  async getProducts(): Promise<Product[]> {
+  async getProducts(searchTerm?: string, typeFilter?: string, countryFilter?: string): Promise<Product[]> {
+    const conditions = [];
+
+    // Add search filter if provided
+    if (searchTerm && searchTerm.trim() !== '') {
+      conditions.push(ilike(products.name, `%${searchTerm}%`));
+    }
+
+    // Add type filter if provided
+    if (typeFilter && typeFilter !== 'all') {
+      conditions.push(eq(products.type, typeFilter));
+    }
+
+    // Add country filter if provided
+    if (countryFilter && countryFilter !== 'all') {
+      conditions.push(eq(products.country, countryFilter));
+    }
+
+    // Apply conditions if they exist
+    if (conditions.length > 0) {
+      return await db.select().from(products).where(and(...conditions));
+    }
+
     return await db.select().from(products);
   }
 
