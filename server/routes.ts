@@ -5,6 +5,7 @@ import { ProductController } from "./controllers/product.controller";
 import { ConsignmentController } from "./controllers/consignment.controller";
 import { StockCountController } from "./controllers/stock-count.controller";
 import { DashboardController } from "./controllers/dashboard.controller";
+import { InventoryController } from "./controllers/inventory.controller";
 import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -14,6 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const consignmentController = new ConsignmentController();
   const stockCountController = new StockCountController();
   const dashboardController = new DashboardController();
+  const inventoryController = new InventoryController();
 
   // Clients routes
   app.get("/api/clients", clientController.getClients);
@@ -47,27 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get("/api/dashboard/stats", dashboardController.getDashboardStats);
 
-  // Legacy inventory endpoints (keeping for backward compatibility)
-  app.get("/api/inventory/:clientId", async (req, res) => {
-    try {
-      const clientId = parseInt(req.params.clientId);
-      const inventory = await storage.getClientInventory(clientId);
-      res.json(inventory);
-    } catch (error) {
-      console.error("Error fetching client inventory:", error);
-      res.status(500).json({ message: "Failed to fetch client inventory" });
-    }
-  });
-
-  app.get("/api/reports/current-stock", async (req, res) => {
-    try {
-      const inventory = await storage.getCurrentStockReport();
-      res.json(inventory);
-    } catch (error) {
-      console.error("Error fetching current stock report:", error);
-      res.status(500).json({ message: "Failed to fetch current stock report" });
-    }
-  });
+  // Inventory routes
+  app.get("/api/inventory/:clientId", inventoryController.getClientInventory);
+  app.get("/api/inventory/:clientId/summary", inventoryController.getClientInventorySummary);
+  app.get("/api/reports/current-stock", inventoryController.getCurrentStockReport);
 
   const httpServer = createServer(app);
   return httpServer;

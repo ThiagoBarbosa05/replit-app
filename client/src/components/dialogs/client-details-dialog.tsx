@@ -39,8 +39,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
 
   if (!client) return null;
 
-  console.log(clientInventory)
-
+ console.log(client)
   // Calcular estatísticas
   const totalConsignments = clientConsignments.length;
   const totalProducts = clientConsignments.reduce((sum, c) => sum + c.items.length, 0);
