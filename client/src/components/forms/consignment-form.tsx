@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 import type { Client, Product, ConsignmentWithDetails, InsertConsignmentItem } from "@shared/schema";
+
+const consignmentFormSchema = z.object({
+  clientId: z.number().min(1, "Cliente é obrigatório"),
+  items: z.array(z.object({
+    productId: z.number().min(1, "Produto é obrigatório"),
+    quantity: z.number().min(1, "Quantidade deve ser maior que 0"),
+    unitPrice: z.string().min(1, "Preço é obrigatório"),
+  })).min(1, "Pelo menos um produto é obrigatório"),
+});
 
 interface ConsignmentFormData {
   clientId: number;
@@ -22,6 +33,8 @@ interface ConsignmentFormProps {
 }
 
 export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoading }: ConsignmentFormProps) {
+  const [selectedClientId, setSelectedClientId] = useState<string>(consignment?.clientId?.toString() || "");
+
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"]
   });
@@ -31,6 +44,7 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
   });
 
   const form = useForm<ConsignmentFormData>({
+    resolver: zodResolver(consignmentFormSchema),
     defaultValues: {
       clientId: consignment?.clientId || 0,
       items: consignment?.items.map(item => ({
@@ -40,6 +54,19 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
       })) || [{ productId: 0, quantity: 1, unitPrice: "0" }],
     },
   });
+
+  // Update form when consignment changes
+  useEffect(() => {
+    if (consignment) {
+      setSelectedClientId(consignment.clientId.toString());
+      form.setValue("clientId", consignment.clientId);
+      form.setValue("items", consignment.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })));
+    }
+  }, [consignment, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -67,14 +94,18 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
       <div>
         <Label htmlFor="clientId">Cliente *</Label>
         <Select 
-          onValueChange={(value) => form.setValue("clientId", parseInt(value))}
-          defaultValue={consignment?.clientId?.toString()}
+          value={selectedClientId}
+          onValueChange={(value) => {
+            setSelectedClientId(value);
+            form.setValue("clientId", parseInt(value));
+            form.clearErrors("clientId");
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione um cliente" />
           </SelectTrigger>
           <SelectContent>
-            {clients.map((client) => (
+            {clients.filter(client => client.isActive).map((client) => (
               <SelectItem key={client.id} value={client.id.toString()}>
                 {client.name}
               </SelectItem>
@@ -103,14 +134,15 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                   <div>
                     <Label>Produto</Label>
                     <Select 
+                      value={field.productId?.toString() || ""}
                       onValueChange={(value) => {
                         const product = products.find(p => p.id === parseInt(value));
                         form.setValue(`items.${index}.productId`, parseInt(value));
                         if (product) {
                           form.setValue(`items.${index}.unitPrice`, product.unitPrice);
                         }
+                        form.clearErrors(`items.${index}.productId`);
                       }}
-                      defaultValue={field.productId?.toString()}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um produto" />
@@ -123,6 +155,11 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.items?.[index]?.productId && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.items[index]?.productId?.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -132,6 +169,11 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                       min="1"
                       {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
                     />
+                    {form.formState.errors.items?.[index]?.quantity && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.items[index]?.quantity?.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -142,6 +184,11 @@ export default function ConsignmentForm({ consignment, onSubmit, onCancel, isLoa
                       min="0"
                       {...form.register(`items.${index}.unitPrice`)}
                     />
+                    {form.formState.errors.items?.[index]?.unitPrice && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.items[index]?.unitPrice?.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>

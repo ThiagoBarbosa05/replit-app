@@ -187,10 +187,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/consignments", async (req, res) => {
     try {
+      // Validate request body
+      const { clientId, items } = req.body;
+      
+      if (!clientId || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ 
+          message: "Invalid consignment data: clientId and items are required" 
+        });
+      }
+
+      // Validate each item
+      for (const item of items) {
+        if (!item.productId || !item.quantity || item.quantity <= 0 || !item.unitPrice) {
+          return res.status(400).json({ 
+            message: "Invalid item data: productId, quantity and unitPrice are required" 
+          });
+        }
+      }
+
       const consignment = await storage.createConsignment(req.body);
       res.status(201).json(consignment);
     } catch (error) {
-      res.status(400).json({ message: "Invalid consignment data", error });
+      console.error("Error creating consignment:", error);
+      res.status(400).json({ message: "Failed to create consignment", error });
     }
   });
 

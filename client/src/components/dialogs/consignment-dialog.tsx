@@ -30,6 +30,7 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
       queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       toast({
         title: "Sucesso",
@@ -55,6 +56,7 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
       queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       toast({
         title: "Sucesso",
@@ -86,6 +88,9 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
           <DialogTitle className="text-lg sm:text-xl">
             {consignment ? "Editar Consignação" : "Nova Consignação"}
           </DialogTitle>
+          <p className="text-sm text-gray-600">
+            {consignment ? "Atualize as informações da consignação" : "Registre uma nova consignação de vinhos para o cliente"}
+          </p>
         </DialogHeader>
         <ConsignmentForm
           consignment={consignment}

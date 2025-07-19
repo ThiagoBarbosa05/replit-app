@@ -240,7 +240,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
                         </div>
                         {item.lastCountDate && (
                           <div className="text-xs text-gray-500">
-                            Último inventário: {formatDate(item.lastCountDate)}
+                            Última contagem: {formatDate(item.lastCountDate)}
                           </div>
                         )}
                       </div>
