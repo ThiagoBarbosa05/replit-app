@@ -27,10 +27,10 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
 
   // Buscar inventário do cliente
   const { data: clientInventory = [] } = useQuery({
-    queryKey: ["/api/inventory", client?.id],
+    queryKey: ["/api/clients", client?.id, "inventory"],
     queryFn: async () => {
       if (!client?.id) return [];
-      const response = await fetch(`/api/inventory/${client.id}`);
+      const response = await fetch(`/api/clients/${client.id}/inventory`);
       if (!response.ok) throw new Error('Failed to fetch inventory');
       return response.json();
     },
@@ -43,7 +43,9 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
   const totalConsignments = clientConsignments.length;
   const totalProducts = clientConsignments.reduce((sum, c) => sum + c.items.length, 0);
   const totalValue = clientConsignments.reduce((sum, c) => sum + parseFloat(c.totalValue || '0'), 0);
-  const totalSold = clientInventory.reduce((sum: number, item: any) => sum + (item.quantitySent - item.quantityRemaining), 0);
+  const totalSold = clientInventory.reduce((sum: number, item: any) => {
+    return sum + (item.totalSold || 0);
+  }, 0);
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -54,6 +56,8 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
     return d.toLocaleDateString('pt-BR');
   };
 
+
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -173,7 +177,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 text-orange-500" />
                   <div>
-                    <div className="text-2xl font-bold">{totalSold}</div>
+                    <div className="text-2xl font-bold">{totalSold || 0}</div>
                     <div className="text-xs text-gray-500">Vendidos</div>
                   </div>
                 </div>
@@ -190,7 +194,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
               {clientConsignments.length > 0 ? (
                 <div className="space-y-3">
                   {clientConsignments.slice(0, 5).map((consignment) => (
-                    <div key={consignment.id} className="flex items-center justify-between p-3 border rounded">
+                    <div key={`consignment-${consignment.id}`} className="flex items-center justify-between p-3 border rounded">
                       <div>
                         <div className="font-medium">Consignação #{consignment.id}</div>
                         <div className="text-sm text-gray-600">
@@ -200,7 +204,7 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
                       <div className="text-right">
                         <div className="font-semibold">{formatCurrency(parseFloat(consignment.totalValue || '0'))}</div>
                         <Badge variant="outline" className="text-xs">
-                          {consignment.items.reduce((sum, item) => sum + item.quantity, 0)} unidades
+                          {consignment.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} unidades
                         </Badge>
                       </div>
                     </div>
@@ -227,20 +231,25 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <CardContent>
               {clientInventory.length > 0 ? (
                 <div className="space-y-3">
-                  {clientInventory.slice(0, 5).map((item: any) => (
-                    <div key={item.productId} className="flex items-center justify-between p-3 border rounded">
+                  {clientInventory.slice(0, 5).map((item: any, index: number) => (
+                    <div key={`inventory-${item.product?.id || index}`} className="flex items-center justify-between p-3 border rounded">
                       <div>
-                        <div className="font-medium">{item.productName}</div>
+                        <div className="font-medium">{item.product?.name || 'Produto sem nome'}</div>
                         <div className="text-sm text-gray-600">
-                          Enviado: {item.quantitySent} • Restante: {item.quantityRemaining}
+                          Enviado: {item.totalSent || 0} • Contado: {item.totalCounted || 0}
                         </div>
+                        {item.lastCountDate && (
+                          <div className="text-xs text-gray-500">
+                            Último inventário: {formatDate(item.lastCountDate)}
+                          </div>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-green-600">
-                          Vendido: {item.quantitySent - item.quantityRemaining}
+                          Vendido: {item.totalSold || 0}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {formatCurrency(parseFloat(item.productPrice || '0'))} cada
+                          {formatCurrency(parseFloat(item.product?.unitPrice || '0'))} cada
                         </div>
                       </div>
                     </div>

@@ -299,6 +299,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inventory = await storage.getClientInventory(clientId);
       res.json(inventory);
     } catch (error) {
+      console.error("Error fetching client inventory:", error);
+      res.status(500).json({ message: "Failed to fetch client inventory" });
+    }
+  });
+
+  // Alternative endpoint for client inventory (REST pattern)
+  app.get("/api/clients/:id/inventory", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.id);
+      const inventory = await storage.getClientInventory(clientId);
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error fetching client inventory:", error);
       res.status(500).json({ message: "Failed to fetch client inventory" });
     }
   });

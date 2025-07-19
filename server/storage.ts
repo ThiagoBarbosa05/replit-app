@@ -784,6 +784,8 @@ export class DatabaseStorage implements IStorage {
 
   // Inventory Management
   async getClientInventory(clientId: number): Promise<any[]> {
+    console.log(`Getting inventory for client ${clientId}`);
+    
     // Get all consignment items for this client with product info
     const sentItems = await db
       .select({
@@ -808,11 +810,15 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(products, eq(consignmentItems.productId, products.id))
       .where(eq(consignments.clientId, clientId));
 
+    console.log(`Found ${sentItems.length} consignment items for client ${clientId}`);
+
     // Get stock counts for this client
     const clientStockCounts = await db
       .select()
       .from(stockCounts)
       .where(eq(stockCounts.clientId, clientId));
+
+    console.log(`Found ${clientStockCounts.length} stock counts for client ${clientId}`);
 
     // Process inventory
     const inventory = new Map<number, any>();
@@ -843,9 +849,12 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return Array.from(inventory.values()).sort((a, b) =>
+    const result = Array.from(inventory.values()).sort((a, b) =>
       a.product.name.localeCompare(b.product.name),
     );
+
+    console.log(`Returning ${result.length} inventory items for client ${clientId}`);
+    return result;
   }
 
   async calculateStockDifference(

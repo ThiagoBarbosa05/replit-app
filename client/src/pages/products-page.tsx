@@ -117,7 +117,7 @@ export default function ProductsPage() {
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {product.photo && (
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                      <div className="aspect-square rounded-lg p-2 overflow-hidden bg-gray-100">
                         <img 
                           src={product.photo} 
                           alt={product.name}
