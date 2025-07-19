@@ -1,21 +1,22 @@
+import { Link, useLocation } from "wouter";
 import { Wine, BarChart3, Building, Truck, ClipboardList, Users, UserCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  onClose?: () => void;
+  onNavigate?: () => void;
 }
 
-export default function Sidebar({ activeTab, setActiveTab, onClose }: SidebarProps) {
+export default function Sidebar({ onNavigate }: SidebarProps) {
+  const [location] = useLocation();
+  
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "clients", label: "Clientes", icon: Building },
-    { id: "products", label: "Produtos", icon: Wine },
-    { id: "consignments", label: "Consignações", icon: Truck },
-    { id: "inventory", label: "Contagem", icon: ClipboardList },
-    { id: "reports", label: "Relatórios", icon: BarChart3 },
-    { id: "users", label: "Usuários", icon: UserCircle },
+    { path: "/", label: "Dashboard", icon: BarChart3 },
+    { path: "/clients", label: "Clientes", icon: Building },
+    { path: "/products", label: "Produtos", icon: Wine },
+    { path: "/consignments", label: "Consignações", icon: Truck },
+    { path: "/inventory", label: "Contagem", icon: ClipboardList },
+    { path: "/reports", label: "Relatórios", icon: BarChart3 },
+    { path: "/users", label: "Usuários", icon: UserCircle },
   ];
 
   return (
@@ -33,11 +34,11 @@ export default function Sidebar({ activeTab, setActiveTab, onClose }: SidebarPro
             </div>
           </div>
           {/* Close button for mobile */}
-          {onClose && (
+          {onNavigate && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={onNavigate}
               className="lg:hidden"
             >
               <X className="w-4 h-4" />
@@ -51,22 +52,24 @@ export default function Sidebar({ activeTab, setActiveTab, onClose }: SidebarPro
         <ul className="space-y-1 sm:space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = location === item.path;
             
             return (
-              <li key={item.id}>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start space-x-2 sm:space-x-3 text-sm sm:text-base ${
-                    isActive 
-                      ? "bg-primary text-white hover:bg-primary/90" 
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{item.label}</span>
-                </Button>
+              <li key={item.path}>
+                <Link href={item.path}>
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start space-x-2 sm:space-x-3 text-sm sm:text-base ${
+                      isActive 
+                        ? "bg-primary text-white hover:bg-primary/90" 
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                    onClick={onNavigate}
+                  >
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>{item.label}</span>
+                  </Button>
+                </Link>
               </li>
             );
           })}

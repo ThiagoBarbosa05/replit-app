@@ -17,6 +17,7 @@ import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
 import StockCountDialog from "@/components/dialogs/stock-count-dialog";
 import UserDialog from "@/components/dialogs/user-dialog";
 import type { DashboardStats, Client, Product, ConsignmentWithDetails, StockCount, User } from "@shared/schema";
+import { toast } from "@/hooks/use-toast";
 
 type ActiveTab = "dashboard" | "clients" | "products" | "consignments" | "inventory" | "reports" | "users";
 
@@ -137,10 +138,16 @@ export default function Dashboard() {
       }
 
       // Refetch clients data
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });      
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+
       
       // Show success message using the browser's built-in alert for simplicity
-      alert(`Cliente ${action === "desativar" ? "desativado" : "ativado"} com sucesso!`);
+      toast({
+        title: "Sucesso",
+        description: `Cliente ${action === "desativar" ? "desativado" : "ativado"} com sucesso!`
+      })
+      
       
     } catch (error) {
       console.error(`Error ${action}ing client:`, error);
@@ -470,10 +477,10 @@ export default function Dashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                <Button onClick={() => viewClientDetails(client)} variant="ghost" size="sm">
+                                <Button title="Ver Detalhes" onClick={() => viewClientDetails(client)} variant="ghost" size="sm">
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => openClientDialog(client)}>
+                                <Button title="Editar cliente" variant="ghost" size="sm" onClick={() => openClientDialog(client)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button 
