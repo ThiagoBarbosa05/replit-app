@@ -21,7 +21,7 @@ import {
   users,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and, desc, count, sum, or, like, ilike } from "drizzle-orm";
+import { eq, sql, and, desc, count, sum, or, like, ilike, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // Clients
@@ -41,7 +41,13 @@ export interface IStorage {
   deleteProduct(id: number): Promise<boolean>;
 
   // Consignments
-  getConsignments(clientId?: number): Promise<ConsignmentWithDetails[]>;
+  getConsignments(
+    clientId?: number, 
+    searchTerm?: string, 
+    statusFilter?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ConsignmentWithDetails[]>;
   getConsignment(id: number): Promise<ConsignmentWithDetails | undefined>;
   createConsignment(
     consignment: InsertConsignment & { items: InsertConsignmentItem[] },
@@ -281,7 +287,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Consignments
-  async getConsignments(clientId?: number): Promise<ConsignmentWithDetails[]> {
+  async getConsignments(
+    clientId?: number, 
+    searchTerm?: string, 
+    statusFilter?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ConsignmentWithDetails[]> {
     let query = db
       .select({
         id: consignments.id,
@@ -302,9 +314,41 @@ export class DatabaseStorage implements IStorage {
       .from(consignments)
       .leftJoin(clients, eq(consignments.clientId, clients.id));
 
+    const conditions = [];
+
     // Filtrar por clientId se fornecido
     if (clientId) {
-      query = query.where(eq(consignments.clientId, clientId));
+      conditions.push(eq(consignments.clientId, clientId));
+    }
+
+    // Filtrar por termo de busca (nome do cliente ou CNPJ)
+    if (searchTerm && searchTerm.trim() !== '') {
+      conditions.push(
+        or(
+          ilike(clients.name, `%${searchTerm}%`),
+          ilike(clients.cnpj, `%${searchTerm}%`)
+        )
+      );
+    }
+
+    // Filtrar por status
+    if (statusFilter && statusFilter !== '') {
+      conditions.push(eq(consignments.status, statusFilter));
+    }
+
+    // Filtrar por data de início
+    if (startDate) {
+      conditions.push(gte(consignments.date, startDate));
+    }
+
+    // Filtrar por data final
+    if (endDate) {
+      conditions.push(lte(consignments.date, endDate));
+    }
+
+    // Aplicar condições se existirem
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     const result = await query.orderBy(desc(consignments.date));

@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Building } from "lucide-react";
+import { Plus, Search, Edit, Building, Filter, Calendar } from "lucide-react";
 import ConsignmentDialog from "@/components/dialogs/consignment-dialog";
 import type { ConsignmentWithDetails, Client } from "@shared/schema";
 
@@ -16,10 +17,28 @@ export default function ConsignmentsPage() {
   const [selectedConsignment, setSelectedConsignment] = useState<ConsignmentWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [clientFilter, setClientFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Build query parameters for server-side filtering
+  const queryParams = new URLSearchParams();
+  if (searchTerm.trim()) queryParams.append('search', searchTerm.trim());
+  if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
+  if (startDate) queryParams.append('startDate', startDate);
+  if (endDate) queryParams.append('endDate', endDate);
+  
+  const queryString = queryParams.toString();
+  const queryKey = queryString ? ["/api/consignments", queryString] : ["/api/consignments"];
 
   const { data: consignments = [], isLoading: consignmentsLoading } = useQuery<ConsignmentWithDetails[]>({
-    queryKey: ["/api/consignments"]
+    queryKey,
+    queryFn: async () => {
+      const url = queryString ? `/api/consignments?${queryString}` : '/api/consignments';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch consignments');
+      return response.json();
+    }
   });
 
   const { data: clients = [] } = useQuery<Client[]>({
@@ -59,17 +78,8 @@ export default function ConsignmentsPage() {
     }
   };
 
-  // Filter consignments
-  const filteredConsignments = consignments.filter(consignment => {
-    const matchesSearch = consignment.client?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         consignment.items.some(item => 
-                           item.product?.name.toLowerCase().includes(searchTerm.toLowerCase())
-                         );
-    const matchesStatus = statusFilter === "all" || consignment.status === statusFilter;
-    const matchesClient = clientFilter === "all" || consignment.clientId.toString() === clientFilter;
-    
-    return matchesSearch && matchesStatus && matchesClient;
-  });
+  // No need for client-side filtering since we're using server-side filtering
+  const filteredConsignments = consignments;
 
   return (
     <div className="space-y-6">
@@ -107,21 +117,53 @@ export default function ConsignmentsPage() {
                   <SelectItem value="completed">Concluído</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={clientFilter} onValueChange={setClientFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Todos os clientes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os clientes</SelectItem>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFilters(!showFilters)}
+                className="w-full sm:w-auto"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                {showFilters ? 'Ocultar Filtros' : 'Mais Filtros'}
+              </Button>
             </div>
           </div>
+
+          {showFilters && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="startDate" className="text-sm font-medium">Data Inicial</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="endDate" className="text-sm font-medium">Data Final</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setStartDate("");
+                  setEndDate("");
+                }}>
+                  Limpar Filtros
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="mb-4 text-sm text-gray-600">
             {consignmentsLoading ? "Carregando..." : `${filteredConsignments.length} consignação${filteredConsignments.length !== 1 ? 'ões' : ''} encontrada${filteredConsignments.length !== 1 ? 's' : ''}`}

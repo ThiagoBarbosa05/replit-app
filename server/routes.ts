@@ -165,7 +165,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/consignments", async (req, res) => {
     try {
       const clientId = req.query.clientId as string;
-      const consignments = await storage.getConsignments(clientId ? parseInt(clientId) : undefined);
+      const searchTerm = req.query.search as string;
+      const statusFilter = req.query.status as string;
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      const consignments = await storage.getConsignments(
+        clientId ? parseInt(clientId) : undefined,
+        searchTerm,
+        statusFilter,
+        startDate,
+        endDate
+      );
       res.json(consignments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch consignments" });
