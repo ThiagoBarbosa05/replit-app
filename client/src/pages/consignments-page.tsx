@@ -66,6 +66,14 @@ export default function ConsignmentsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
+      // Invalidate stock-related queries (crucial for when status changes to "delivered")
+      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock"
+      });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock-value"
+      });
       toast({
         title: "Sucesso",
         description: "Status da consignação atualizado com sucesso!",

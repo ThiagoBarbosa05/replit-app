@@ -103,10 +103,15 @@ export default function StockPage() {
         title: "Contagem realizada com sucesso",
         description: `Vendas: ${result.quantitySold} unidades (${formatCurrency(parseFloat(result.salesValue))})`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", selectedClientId, "stock"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", selectedClientId, "stock-value"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", selectedClientId, "inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
       setCountDialogOpen(false);
       setSelectedItem(null);
-      refetchStock();
     },
     onError: (error: Error) => {
       toast({
@@ -132,10 +137,11 @@ export default function StockPage() {
         title: "Alerta de estoque definido",
         description: "Limite mínimo atualizado com sucesso",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", selectedClientId, "stock"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
       setAlertDialogOpen(false);
       setSelectedItem(null);
-      refetchStock();
     },
     onError: (error: Error) => {
       toast({
@@ -368,10 +374,13 @@ export default function StockPage() {
 
       {/* Stock Count Dialog */}
       <Dialog open={countDialogOpen} onOpenChange={setCountDialogOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="count-dialog-description">
           <DialogHeader>
             <DialogTitle>Realizar Contagem de Estoque</DialogTitle>
           </DialogHeader>
+          <div id="count-dialog-description" className="sr-only">
+            Formulário para realizar contagem de estoque e processar vendas
+          </div>
           {selectedItem && (
             <div className="space-y-4">
               <div>
@@ -414,10 +423,13 @@ export default function StockPage() {
 
       {/* Minimum Alert Dialog */}
       <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="alert-dialog-description">
           <DialogHeader>
             <DialogTitle>Configurar Alerta de Estoque</DialogTitle>
           </DialogHeader>
+          <div id="alert-dialog-description" className="sr-only">
+            Formulário para configurar alertas de estoque mínimo
+          </div>
           {selectedItem && (
             <div className="space-y-4">
               <div>

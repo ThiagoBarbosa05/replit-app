@@ -32,6 +32,14 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
+      // Invalidate stock-related queries as well
+      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock"
+      });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock-value"
+      });
       toast({
         title: "Sucesso",
         description: "Consignação criada com sucesso!",
@@ -58,6 +66,14 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
+      // Invalidate stock-related queries as well (important for status changes to "delivered")
+      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock"
+      });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock-value"
+      });
       toast({
         title: "Sucesso",
         description: "Consignação atualizada com sucesso!",

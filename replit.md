@@ -10,6 +10,29 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Query Invalidation Fixes and Real-Time Stock System (July 20, 2025)
+- ✓ Fixed critical query invalidation issues in all mutation components
+- ✓ Updated ConsignmentDialog to properly invalidate stock-related queries
+- ✓ Enhanced ConsignmentsPage status change mutation to refresh stock data
+- ✓ Corrected StockCountDialog and StockPage query invalidations
+- ✓ Added comprehensive predicate-based invalidations for all client stock queries
+- ✓ Fixed accessibility warnings by adding proper ARIA descriptions to dialogs
+- ✓ Tested end-to-end workflow: consignment creation → delivery → automatic stock update
+- ✓ Verified real-time stock management system works correctly with all data synchronization
+- ✓ All frontend components now refresh data immediately after mutations
+
+### Real-Time Stock Control Implementation (July 20, 2025)  
+- ✓ Created complete client_stock table schema with real-time inventory tracking
+- ✓ Built ClientStockRepository with optimized queries for stock management
+- ✓ Implemented ClientStockService with business logic for inventory operations
+- ✓ Added ClientStockController with full CRUD operations and error handling
+- ✓ Integrated automatic stock updates when consignments are marked as delivered
+- ✓ Created comprehensive Stock page with client selection and real-time data
+- ✓ Added low stock alerts system with configurable minimum thresholds
+- ✓ Implemented stock counting feature that automatically calculates sales
+- ✓ Added stock value calculations and comprehensive inventory reporting
+- ✓ Enhanced sidebar navigation with dedicated Stock menu item
+
 ### API Error Fixes and Endpoint Corrections (July 20, 2025)
 - ✓ Fixed stock count creation error when updating consignment status to delivered
 - ✓ Corrected bulkCreate method parameter naming conflict in stock-count repository
