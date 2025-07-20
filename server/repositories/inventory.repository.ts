@@ -45,7 +45,12 @@ export class InventoryRepository {
     const consignmentItemsQuery = await db
       .select({
         productId: consignmentItems.productId,
-        product: products,
+        productName: products.name,
+        productCountry: products.country,
+        productType: products.type,
+        productUnitPrice: products.unitPrice,
+        productVolume: products.volume,
+        productPhoto: products.photo,
         consignmentId: consignmentItems.consignmentId,
         quantity: consignmentItems.quantity,
         unitPrice: consignmentItems.unitPrice,
@@ -53,8 +58,8 @@ export class InventoryRepository {
         consignmentStatus: consignments.status,
       })
       .from(consignmentItems)
-      .leftJoin(products, eq(consignmentItems.productId, products.id))
-      .leftJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .innerJoin(consignments, eq(consignmentItems.consignmentId, consignments.id))
+      .innerJoin(products, eq(consignmentItems.productId, products.id))
       .where(eq(consignments.clientId, clientId));
 
     // Get stock counts for this client
@@ -68,19 +73,17 @@ export class InventoryRepository {
 
     // Process consignment items
     for (const item of consignmentItemsQuery) {
-      if (!item.product) continue;
-
       const productId = item.productId;
       
       if (!inventoryMap.has(productId)) {
         inventoryMap.set(productId, {
           productId,
-          productName: item.product.name,
-          productCountry: item.product.country,
-          productType: item.product.type,
-          unitPrice: item.product.unitPrice,
-          volume: item.product.volume || "750ml",
-          photo: item.product.photo,
+          productName: item.productName || "Produto Desconhecido",
+          productCountry: item.productCountry || "",
+          productType: item.productType || "",
+          unitPrice: item.productUnitPrice || "0.00",
+          volume: item.productVolume || "750ml",
+          photo: item.productPhoto || undefined,
           totalSent: 0,
           totalRemaining: 0,
           totalSold: 0,

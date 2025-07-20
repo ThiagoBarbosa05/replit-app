@@ -10,13 +10,17 @@ export class InventoryController {
 
   getClientInventory = async (req: Request, res: Response) => {
     try {
+      console.log("InventoryController.getClientInventory called with clientId:", req.params.clientId);
       const clientId = parseInt(req.params.clientId);
       
       if (isNaN(clientId)) {
+        console.log("Invalid client ID provided:", req.params.clientId);
         return res.status(400).json({ message: "Invalid client ID" });
       }
 
+      console.log("Fetching inventory for client:", clientId);
       const inventory = await this.inventoryService.getClientInventory(clientId);
+      console.log("Inventory fetched, count:", inventory.length);
       res.json(inventory);
     } catch (error) {
       console.error("Error fetching client inventory:", error);

@@ -50,8 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/stats", dashboardController.getDashboardStats);
 
   // Inventory routes
-  app.get("/api/inventory/:clientId", inventoryController.getClientInventory);
-  app.get("/api/inventory/:clientId/summary", inventoryController.getClientInventorySummary);
+  app.get("/api/clients/:clientId/inventory", inventoryController.getClientInventory);
+  app.get("/api/clients/:clientId/inventory/summary", inventoryController.getClientInventorySummary);
   app.get("/api/reports/current-stock", inventoryController.getCurrentStockReport);
 
   const httpServer = createServer(app);
