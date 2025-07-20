@@ -15,13 +15,21 @@ export class ConsignmentController {
       const status = req.query.status as string;
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
+      const clientId = req.query.clientId as string;
+      
+      console.log("ConsignmentController.getConsignments called with filters:", {
+        searchTerm, status, startDate, endDate, clientId
+      });
       
       const consignments = await this.consignmentService.getAllConsignments(
         searchTerm, 
         status, 
         startDate, 
-        endDate
+        endDate,
+        clientId ? parseInt(clientId) : undefined
       );
+      
+      console.log("Consignments fetched, count:", consignments.length);
       res.json(consignments);
     } catch (error) {
       console.error("Error fetching consignments:", error);

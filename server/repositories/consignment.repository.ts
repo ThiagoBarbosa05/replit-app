@@ -14,7 +14,8 @@ export class ConsignmentRepository {
     searchTerm?: string, 
     status?: string, 
     startDate?: string, 
-    endDate?: string
+    endDate?: string,
+    clientId?: number
   ): Promise<ConsignmentWithDetails[]> {
     let query = db
       .select({
@@ -52,6 +53,11 @@ export class ConsignmentRepository {
     }
     if (endDate) {
       conditions.push(lte(consignments.date, endDate));
+    }
+
+    // Client filter
+    if (clientId) {
+      conditions.push(eq(consignments.clientId, clientId));
     }
 
     if (conditions.length > 0) {

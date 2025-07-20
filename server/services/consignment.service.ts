@@ -19,9 +19,10 @@ export class ConsignmentService {
     searchTerm?: string, 
     status?: string, 
     startDate?: string, 
-    endDate?: string
+    endDate?: string,
+    clientId?: number
   ): Promise<ConsignmentWithDetails[]> {
-    return await this.consignmentRepository.findAll(searchTerm, status, startDate, endDate);
+    return await this.consignmentRepository.findAll(searchTerm, status, startDate, endDate, clientId);
   }
 
   async getConsignmentById(id: number): Promise<ConsignmentWithDetails> {
