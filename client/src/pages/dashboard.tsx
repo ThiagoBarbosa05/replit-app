@@ -77,7 +77,13 @@ export default function Dashboard() {
   });
 
   const { data: clientInventory = [] } = useQuery({
-    queryKey: ["/api/inventory", selectedClientForInventory],
+    queryKey: ["/api/clients", selectedClientForInventory, "inventory"],
+    queryFn: async () => {
+      if (!selectedClientForInventory) return [];
+      const response = await fetch(`/api/clients/${selectedClientForInventory}/inventory`);
+      if (!response.ok) throw new Error('Failed to fetch inventory');
+      return response.json();
+    },
     enabled: activeTab === "inventory" && !!selectedClientForInventory
   });
 

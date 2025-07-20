@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### API Error Fixes and Endpoint Corrections (July 20, 2025)
+- ✓ Fixed stock count creation error when updating consignment status to delivered
+- ✓ Corrected bulkCreate method parameter naming conflict in stock-count repository
+- ✓ Updated all frontend API calls to use correct endpoint structure
+- ✓ Changed /api/inventory/:id calls to /api/clients/:clientId/inventory
+- ✓ Fixed stock count form, inventory page, and dashboard API calls
+- ✓ All API endpoints now work correctly without errors
+- ✓ Consignment status updates now properly create stock counts
+
 ### Client Details Data Integrity and Bug Fixes (July 20, 2025)
 - ✓ Identified and fixed data inconsistencies in stock_counts table
 - ✓ Corrected consignment filtering to show client-specific data only

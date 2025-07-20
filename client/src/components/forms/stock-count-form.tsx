@@ -45,12 +45,30 @@ export default function StockCountForm({ onSubmit, onCancel, isLoading }: StockC
   });
 
   const { data: inventory = [] } = useQuery({
-    queryKey: ["/api/inventory", selectedClientId],
+    queryKey: ["/api/clients", selectedClientId, "inventory"],
+    queryFn: async () => {
+      if (!selectedClientId) return [];
+      const response = await fetch(`/api/clients/${selectedClientId}/inventory`);
+      if (!response.ok) throw new Error('Failed to fetch inventory');
+      return response.json();
+    },
     enabled: !!selectedClientId
   });
 
   const { data: difference } = useQuery({
-    queryKey: ["/api/inventory", selectedClientId, selectedProductId, "difference"],
+    queryKey: ["/api/clients", selectedClientId, "inventory", selectedProductId, "difference"],
+    queryFn: async () => {
+      if (!selectedClientId || !selectedProductId) return null;
+      const response = await fetch(`/api/clients/${selectedClientId}/inventory`);
+      if (!response.ok) throw new Error('Failed to fetch inventory');
+      const inventory = await response.json();
+      const product = inventory.find((item: any) => item.productId === selectedProductId);
+      return product ? {
+        sent: product.totalSent || 0,
+        remaining: product.totalRemaining || 0,
+        sold: product.totalSold || 0
+      } : null;
+    },
     enabled: !!selectedClientId && !!selectedProductId
   });
 

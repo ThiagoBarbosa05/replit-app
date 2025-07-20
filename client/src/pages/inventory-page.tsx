@@ -23,7 +23,13 @@ export default function InventoryPage() {
   });
 
   const { data: clientInventory = [] } = useQuery({
-    queryKey: ["/api/inventory", selectedClientForInventory],
+    queryKey: ["/api/clients", selectedClientForInventory, "inventory"],
+    queryFn: async () => {
+      if (!selectedClientForInventory) return [];
+      const response = await fetch(`/api/clients/${selectedClientForInventory}/inventory`);
+      if (!response.ok) throw new Error('Failed to fetch inventory');
+      return response.json();
+    },
     enabled: !!selectedClientForInventory
   });
 
@@ -39,7 +45,7 @@ export default function InventoryPage() {
 
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
   };
 
   return (

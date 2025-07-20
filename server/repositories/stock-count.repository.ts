@@ -101,9 +101,9 @@ export class StockCountRepository {
     return result.total;
   }
 
-  async bulkCreate(stockCounts: (InsertStockCount & { quantitySold: number; totalSold: string })[]): Promise<void> {
-    if (stockCounts.length > 0) {
-      await db.insert(stockCounts).values(stockCounts);
+  async bulkCreate(stockCountsData: (InsertStockCount & { quantitySold: number; totalSold: string })[]): Promise<void> {
+    if (stockCountsData.length > 0) {
+      await db.insert(stockCounts).values(stockCountsData);
     }
   }
 }
