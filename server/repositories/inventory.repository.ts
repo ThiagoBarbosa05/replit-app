@@ -107,27 +107,43 @@ export class InventoryRepository {
       });
     }
 
-    // Process stock counts
+    // Process stock counts - aggregate by product
+    const stockAggregation = new Map<number, { totalRemaining: number, totalSold: number, totalSalesValue: number }>();
+    
+    for (const stockCount of stockCountsQuery) {
+      const productId = stockCount.productId;
+      if (!stockAggregation.has(productId)) {
+        stockAggregation.set(productId, { totalRemaining: 0, totalSold: 0, totalSalesValue: 0 });
+      }
+      
+      const agg = stockAggregation.get(productId)!;
+      agg.totalRemaining += stockCount.quantityRemaining;
+      agg.totalSold += stockCount.quantitySold;
+      agg.totalSalesValue += parseFloat(stockCount.totalSold);
+    }
+
+    // Apply aggregated stock counts to inventory items
+    for (const [productId, agg] of stockAggregation) {
+      const inventoryItem = inventoryMap.get(productId);
+      if (!inventoryItem) continue;
+
+      inventoryItem.totalRemaining = agg.totalRemaining;
+      inventoryItem.totalSold = agg.totalSold;
+      inventoryItem.totalSalesValue = agg.totalSalesValue.toFixed(2);
+    }
+
+    // Update individual consignment details with stock counts
     for (const stockCount of stockCountsQuery) {
       const inventoryItem = inventoryMap.get(stockCount.productId);
       if (!inventoryItem) continue;
 
-      inventoryItem.totalRemaining += stockCount.quantityRemaining;
-      inventoryItem.totalSold += stockCount.quantitySold;
-      inventoryItem.totalSalesValue = (
-        parseFloat(inventoryItem.totalSalesValue) + parseFloat(stockCount.totalSold)
-      ).toFixed(2);
-
-      // Update consignment details
       const consignment = inventoryItem.consignments.find(c => 
         c.id === stockCount.consignmentId
       );
       if (consignment) {
-        consignment.quantityRemaining += stockCount.quantityRemaining;
-        consignment.quantitySold += stockCount.quantitySold;
-        consignment.salesValue = (
-          parseFloat(consignment.salesValue) + parseFloat(stockCount.totalSold)
-        ).toFixed(2);
+        consignment.quantityRemaining = stockCount.quantityRemaining;
+        consignment.quantitySold = stockCount.quantitySold;
+        consignment.salesValue = stockCount.totalSold;
       }
     }
 

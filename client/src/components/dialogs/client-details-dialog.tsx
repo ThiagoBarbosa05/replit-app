@@ -48,6 +48,14 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
     return sum + (item.totalSold || 0);
   }, 0);
 
+  const totalSalesValue = clientInventory.reduce((sum: number, item: any) => {
+    return sum + parseFloat(item.totalSalesValue || '0');
+  }, 0);
+
+  const totalRemaining = clientInventory.reduce((sum: number, item: any) => {
+    return sum + (item.totalRemaining || 0);
+  }, 0);
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
@@ -164,10 +172,10 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 min-w-4 text-purple-500" />
+                  <DollarSign className="w-4 h-4 min-w-4 text-green-500" />
                   <div>
-                    <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
-                    <div className="text-xs text-gray-500">Valor Total</div>
+                    <div className="text-2xl font-bold">{formatCurrency(totalSalesValue)}</div>
+                    <div className="text-xs text-gray-500">Vendas</div>
                   </div>
                 </div>
               </CardContent>
@@ -176,10 +184,10 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 min-w-4 text-orange-500" />
+                  <Package className="w-4 h-4 min-w-4 text-blue-500" />
                   <div>
-                    <div className="text-2xl font-bold">{totalSold || 0}</div>
-                    <div className="text-xs text-gray-500">Vendidos</div>
+                    <div className="text-2xl font-bold">{totalRemaining || 0}</div>
+                    <div className="text-xs text-gray-500">Restante</div>
                   </div>
                 </div>
               </CardContent>
@@ -233,24 +241,27 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
               {clientInventory.length > 0 ? (
                 <div className="space-y-3">
                   {clientInventory.slice(0, 5).map((item: any, index: number) => (
-                    <div key={`inventory-${item.product?.id || index}`} className="flex items-center justify-between p-3 border rounded">
+                    <div key={`inventory-${item.productId || index}`} className="flex items-center justify-between p-3 border rounded">
                       <div>
-                        <div className="font-medium">{item.product?.name || 'Produto sem nome'}</div>
+                        <div className="font-medium">{item.productName || 'Produto sem nome'}</div>
                         <div className="text-sm text-gray-600">
-                          Enviado: {item.totalSent || 0} • Contado: {item.totalCounted || 0}
+                          Enviado: {item.totalSent || 0} • Restante: {item.totalRemaining || 0}
                         </div>
-                        {item.lastCountDate && (
-                          <div className="text-xs text-gray-500">
-                            Última contagem: {formatDate(item.lastCountDate)}
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-600">
+                          {item.productCountry && `${item.productCountry} • `}
+                          {item.productType && `${item.productType} • `}
+                          {item.volume || '750ml'}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-green-600">
-                          Vendido: {item.totalSold || 0}
+                          Vendidos: {item.totalSold || 0}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          {formatCurrency(parseFloat(item.totalSalesValue || '0'))}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {formatCurrency(parseFloat(item.product?.unitPrice || '0'))} cada
+                          {formatCurrency(parseFloat(item.unitPrice || '0'))} cada
                         </div>
                       </div>
                     </div>
