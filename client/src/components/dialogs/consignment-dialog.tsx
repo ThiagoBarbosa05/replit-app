@@ -99,12 +99,12 @@ export default function ConsignmentDialog({ open, onOpenChange, consignment, onC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="consignment-dialog-description">
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">
             {consignment ? "Editar Consignação" : "Nova Consignação"}
           </DialogTitle>
-          <p className="text-sm text-gray-600">
+          <p id="consignment-dialog-description" className="text-sm text-gray-600">
             {consignment ? "Atualize as informações da consignação" : "Registre uma nova consignação de vinhos para o cliente"}
           </p>
         </DialogHeader>

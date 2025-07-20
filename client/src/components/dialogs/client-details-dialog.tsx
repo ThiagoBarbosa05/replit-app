@@ -72,13 +72,13 @@ export default function ClientDetailsDialog({ open, onOpenChange, client }: Clie
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="client-details-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building className="w-5 h-5" />
             Detalhes do Cliente
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="client-details-description">
             Visualize informações completas, histórico de consignações e inventário atual
           </DialogDescription>
         </DialogHeader>

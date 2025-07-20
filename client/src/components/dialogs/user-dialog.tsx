@@ -74,12 +74,15 @@ export default function UserDialog({ open, onOpenChange, user, onClose }: UserDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby="user-dialog-description">
         <DialogHeader>
           <DialogTitle>
             {user ? "Editar Usuário" : "Cadastrar Usuário"}
           </DialogTitle>
         </DialogHeader>
+        <div id="user-dialog-description" className="sr-only">
+          Formulário para cadastrar ou editar usuário do sistema
+        </div>
         <UserForm
           user={user}
           onSubmit={handleSubmit}
