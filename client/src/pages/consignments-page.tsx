@@ -6,8 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Edit, Building, Filter, Calendar } from "lucide-react";
@@ -16,35 +29,40 @@ import type { ConsignmentWithDetails, Client } from "@shared/schema";
 
 export default function ConsignmentsPage() {
   const [consignmentDialogOpen, setConsignmentDialogOpen] = useState(false);
-  const [selectedConsignment, setSelectedConsignment] = useState<ConsignmentWithDetails | null>(null);
+  const [selectedConsignment, setSelectedConsignment] =
+    useState<ConsignmentWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   // Build query parameters for server-side filtering
   const queryParams = new URLSearchParams();
-  if (searchTerm.trim()) queryParams.append('search', searchTerm.trim());
-  if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
-  if (startDate) queryParams.append('startDate', startDate);
-  if (endDate) queryParams.append('endDate', endDate);
-  
-  const queryString = queryParams.toString();
-  const queryKey = queryString ? ["/api/consignments", queryString] : ["/api/consignments"];
+  if (searchTerm.trim()) queryParams.append("search", searchTerm.trim());
+  if (startDate) queryParams.append("startDate", startDate);
+  if (endDate) queryParams.append("endDate", endDate);
 
-  const { data: consignments = [], isLoading: consignmentsLoading } = useQuery<ConsignmentWithDetails[]>({
+  const queryString = queryParams.toString();
+  const queryKey = queryString
+    ? ["/api/consignments", queryString]
+    : ["/api/consignments"];
+
+  const { data: consignments = [], isLoading: consignmentsLoading } = useQuery<
+    ConsignmentWithDetails[]
+  >({
     queryKey,
     queryFn: async () => {
-      const url = queryString ? `/api/consignments?${queryString}` : '/api/consignments';
+      const url = queryString
+        ? `/api/consignments?${queryString}`
+        : "/api/consignments";
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch consignments');
+      if (!response.ok) throw new Error("Failed to fetch consignments");
       return response.json();
-    }
+    },
   });
 
   const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"]
+    queryKey: ["/api/clients"],
   });
 
   const { toast } = useToast();
@@ -55,69 +73,14 @@ export default function ConsignmentsPage() {
     setConsignmentDialogOpen(true);
   };
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      const response = await apiRequest("PATCH", `/api/consignments/${id}/status`, { status });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports/current-stock"] });
-      // Invalidate stock-related queries (crucial for when status changes to "delivered")
-      queryClient.invalidateQueries({ queryKey: ["/api/stock", "alerts"] });
-      queryClient.invalidateQueries({ predicate: (query) => 
-        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock"
-      });
-      queryClient.invalidateQueries({ predicate: (query) => 
-        query.queryKey[0] === "/api/clients" && query.queryKey[2] === "stock-value"
-      });
-      toast({
-        title: "Sucesso",
-        description: "Status da consignação atualizado com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao atualizar status da consignação",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleStatusChange = (consignmentId: number, newStatus: string) => {
-    updateStatusMutation.mutate({ id: consignmentId, status: newStatus });
-  };
-
   const formatCurrency = (value: string | number) => {
     const num = typeof value === "string" ? parseFloat(value) : value;
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
-    return d.toLocaleDateString('pt-BR');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered': return 'default';
-      case 'pending': return 'secondary';
-      case 'completed': return 'destructive';
-      default: return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'delivered': return 'Entregue';
-      case 'pending': return 'Pendente';
-      case 'completed': return 'Concluído';
-      default: return status;
-    }
+    return d.toLocaleDateString("pt-BR");
   };
 
   // No need for client-side filtering since we're using server-side filtering
@@ -129,9 +92,14 @@ export default function ConsignmentsPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6">
           <div>
             <CardTitle className="text-lg sm:text-xl">Consignações</CardTitle>
-            <p className="text-sm sm:text-base text-gray-600">Registrar e acompanhar envios de vinhos para clientes</p>
+            <p className="text-sm sm:text-base text-gray-600">
+              Registrar e acompanhar envios de vinhos para clientes
+            </p>
           </div>
-          <Button onClick={() => openConsignmentDialog()} className="w-full sm:w-auto">
+          <Button
+            onClick={() => openConsignmentDialog()}
+            className="w-full sm:w-auto"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Nova Consignação
           </Button>
@@ -140,32 +108,21 @@ export default function ConsignmentsPage() {
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center space-y-4 lg:space-y-0 lg:space-x-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Buscar por cliente ou produto..." 
+              <Input
+                placeholder="Buscar por cliente ou produto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10" 
+                className="pl-10"
               />
             </div>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="delivered">Entregue</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
                 className="w-full sm:w-auto"
               >
                 <Filter className="mr-2 h-4 w-4" />
-                {showFilters ? 'Ocultar Filtros' : 'Mais Filtros'}
+                {showFilters ? "Ocultar Filtros" : "Mais Filtros"}
               </Button>
             </div>
           </div>
@@ -174,7 +131,9 @@ export default function ConsignmentsPage() {
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startDate" className="text-sm font-medium">Data Inicial</Label>
+                  <Label htmlFor="startDate" className="text-sm font-medium">
+                    Data Inicial
+                  </Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -184,7 +143,9 @@ export default function ConsignmentsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="endDate" className="text-sm font-medium">Data Final</Label>
+                  <Label htmlFor="endDate" className="text-sm font-medium">
+                    Data Final
+                  </Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -195,12 +156,14 @@ export default function ConsignmentsPage() {
                 </div>
               </div>
               <div className="mt-4 flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
-                  setStartDate("");
-                  setEndDate("");
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                >
                   Limpar Filtros
                 </Button>
               </div>
@@ -208,7 +171,11 @@ export default function ConsignmentsPage() {
           )}
 
           <div className="mb-4 text-sm text-gray-600">
-            {consignmentsLoading ? "Carregando..." : `${filteredConsignments.length} consignação${filteredConsignments.length !== 1 ? 'ões' : ''} encontrada${filteredConsignments.length !== 1 ? 's' : ''}`}
+            {consignmentsLoading
+              ? "Carregando..."
+              : `${filteredConsignments.length} consignação${
+                  filteredConsignments.length !== 1 ? "ões" : ""
+                } encontrada${filteredConsignments.length !== 1 ? "s" : ""}`}
           </div>
 
           <div className="rounded-md border overflow-x-auto">
@@ -220,7 +187,6 @@ export default function ConsignmentsPage() {
                   <TableHead className="min-w-[120px]">Data</TableHead>
                   <TableHead className="min-w-[100px]">Items</TableHead>
                   <TableHead className="min-w-[120px]">Valor Total</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="min-w-[80px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -228,19 +194,33 @@ export default function ConsignmentsPage() {
                 {consignmentsLoading ? (
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : filteredConsignments.length > 0 ? (
                   filteredConsignments.map((consignment) => (
                     <TableRow key={consignment.id}>
-                      <TableCell className="font-medium">#{consignment.id}</TableCell>
+                      <TableCell className="font-medium">
+                        #{consignment.id}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Building className="w-4 h-4 text-gray-500" />
@@ -248,45 +228,17 @@ export default function ConsignmentsPage() {
                         </div>
                       </TableCell>
                       <TableCell>{formatDate(consignment.date)}</TableCell>
-                      <TableCell>{consignment.items.length} produto(s)</TableCell>
+                      <TableCell>
+                        {consignment.items.length} produto(s)
+                      </TableCell>
                       <TableCell className="font-medium text-green-600">
                         {formatCurrency(consignment.totalValue)}
                       </TableCell>
+
                       <TableCell>
-                        <Select 
-                          value={consignment.status} 
-                          onValueChange={(value) => handleStatusChange(consignment.id, value)}
-                          disabled={updateStatusMutation.isPending}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
-                                Pendente
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="delivered">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                                Entregue
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="completed">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                                Concluído
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => openConsignmentDialog(consignment)}
                         >
                           <Edit className="h-4 w-4" />
@@ -296,8 +248,13 @@ export default function ConsignmentsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      {consignments.length === 0 ? "Nenhuma consignação registrada" : "Nenhuma consignação encontrada com os filtros aplicados"}
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-gray-500"
+                    >
+                      {consignments.length === 0
+                        ? "Nenhuma consignação registrada"
+                        : "Nenhuma consignação encontrada com os filtros aplicados"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -307,8 +264,8 @@ export default function ConsignmentsPage() {
         </CardContent>
       </Card>
 
-      <ConsignmentDialog 
-        open={consignmentDialogOpen} 
+      <ConsignmentDialog
+        open={consignmentDialogOpen}
         onOpenChange={setConsignmentDialogOpen}
         consignment={selectedConsignment}
         onClose={() => {

@@ -1,4 +1,12 @@
-import { pgTable, text, serial, integer, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  decimal,
+  timestamp,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,7 +34,6 @@ export const consignments = pgTable("consignments", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull(),
   date: timestamp("date").defaultNow().notNull(),
-  status: text("status").default("pending").notNull(), // pending, delivered, completed
   totalValue: decimal("total_value", { precision: 10, scale: 2 }).notNull(),
 });
 
@@ -85,11 +92,12 @@ export const insertProductSchema = createInsertSchema(products).omit({
 export const insertConsignmentSchema = createInsertSchema(consignments).omit({
   id: true,
   date: true,
-  status: true,
   totalValue: true,
 });
 
-export const insertConsignmentItemSchema = createInsertSchema(consignmentItems).omit({
+export const insertConsignmentItemSchema = createInsertSchema(
+  consignmentItems
+).omit({
   id: true,
 });
 
@@ -162,12 +170,14 @@ export const createClientSchema = z.object({
 });
 
 export const createProductSchema = z.object({
-    name: z.string().min(1, {message: "Nome do vinho é obrigatório"}),
-    country: z.string().min(1, {message: "O País do vinho é obrigatório"}),
-    type: z.string().min(1, {message: "Tipo do vinho é obrigatório"}),
-    unitPrice: z.coerce.string().min(1, {message: "Preço unitário deve ser maior que zero"}),
-    volume:  z.string().optional(), // 750ml, 375ml, 187ml
-    photo:  z.string().optional().nullable(), // Base64 encoded image
+  name: z.string().min(1, { message: "Nome do vinho é obrigatório" }),
+  country: z.string().min(1, { message: "O País do vinho é obrigatório" }),
+  type: z.string().min(1, { message: "Tipo do vinho é obrigatório" }),
+  unitPrice: z.coerce
+    .string()
+    .min(1, { message: "Preço unitário deve ser maior que zero" }),
+  volume: z.string().optional(), // 750ml, 375ml, 187ml
+  photo: z.string().optional().nullable(), // Base64 encoded image
 });
 
-export type CreateProductSchema = z.infer<typeof createProductSchema>
+export type CreateProductSchema = z.infer<typeof createProductSchema>;

@@ -38,7 +38,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/consignments/:id", consignmentController.getConsignment);
   app.post("/api/consignments", consignmentController.createConsignment);
   app.put("/api/consignments/:id", consignmentController.updateConsignment);
-  app.patch("/api/consignments/:id/status", consignmentController.updateConsignmentStatus);
   app.delete("/api/consignments/:id", consignmentController.deleteConsignment);
 
   // Stock Counts routes
@@ -52,21 +51,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/stats", dashboardController.getDashboardStats);
 
   // Inventory routes
-  app.get("/api/clients/:clientId/inventory", inventoryController.getClientInventory);
-  app.get("/api/clients/:clientId/inventory/summary", inventoryController.getClientInventorySummary);
-  app.get("/api/reports/current-stock", inventoryController.getCurrentStockReport);
+  app.get(
+    "/api/clients/:clientId/inventory",
+    inventoryController.getClientInventory
+  );
+  app.get(
+    "/api/clients/:clientId/inventory/summary",
+    inventoryController.getClientInventorySummary
+  );
+  app.get(
+    "/api/reports/current-stock",
+    inventoryController.getCurrentStockReport
+  );
 
   // Client Stock routes (Real-time inventory)
   app.get("/api/clients/:clientId/stock", clientStockController.getClientStock);
-  app.get("/api/clients/:clientId/stock/:productId", clientStockController.getProductStock);
-  app.put("/api/clients/:clientId/stock/:productId", clientStockController.updateStock);
-  app.post("/api/clients/:clientId/stock/:productId/count", clientStockController.processStockCount);
-  app.put("/api/clients/:clientId/stock/:productId/alert", clientStockController.setMinimumAlert);
-  app.get("/api/clients/:clientId/stock-value", clientStockController.getTotalStockValue);
-  
+  app.get(
+    "/api/clients/:clientId/stock/:productId",
+    clientStockController.getProductStock
+  );
+  app.put(
+    "/api/clients/:clientId/stock/:productId",
+    clientStockController.updateStock
+  );
+  app.post(
+    "/api/clients/:clientId/stock/:productId/count",
+    clientStockController.processStockCount
+  );
+  app.put(
+    "/api/clients/:clientId/stock/:productId/alert",
+    clientStockController.setMinimumAlert
+  );
+  app.get(
+    "/api/clients/:clientId/stock-value",
+    clientStockController.getTotalStockValue
+  );
+
   // Low stock alerts
   app.get("/api/stock/alerts", clientStockController.getLowStockAlerts);
-  app.get("/api/clients/:clientId/stock/alerts", clientStockController.getLowStockAlerts);
+  app.get(
+    "/api/clients/:clientId/stock/alerts",
+    clientStockController.getLowStockAlerts
+  );
 
   const httpServer = createServer(app);
   return httpServer;

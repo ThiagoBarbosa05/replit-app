@@ -1,10 +1,10 @@
 import { ConsignmentRepository } from "../repositories/consignment.repository";
 import { StockCountService } from "./stock-count.service";
 import { ClientStockService } from "./client-stock.service";
-import type { 
-  ConsignmentWithDetails, 
-  InsertConsignment, 
-  InsertConsignmentItem 
+import type {
+  ConsignmentWithDetails,
+  InsertConsignment,
+  InsertConsignmentItem,
 } from "@shared/schema";
 
 export class ConsignmentService {
@@ -19,13 +19,17 @@ export class ConsignmentService {
   }
 
   async getAllConsignments(
-    searchTerm?: string, 
-    status?: string, 
-    startDate?: string, 
+    searchTerm?: string,
+    startDate?: string,
     endDate?: string,
     clientId?: number
   ): Promise<ConsignmentWithDetails[]> {
-    return await this.consignmentRepository.findAll(searchTerm, status, startDate, endDate, clientId);
+    return await this.consignmentRepository.findAll(
+      searchTerm,
+      startDate,
+      endDate,
+      clientId
+    );
   }
 
   async getConsignmentById(id: number): Promise<ConsignmentWithDetails> {
@@ -39,11 +43,26 @@ export class ConsignmentService {
   async createConsignment(
     data: InsertConsignment & { items: InsertConsignmentItem[] }
   ): Promise<ConsignmentWithDetails> {
-    return await this.consignmentRepository.create(data);
+    const consignment = await this.consignmentRepository.create(data);
+
+    // Automatically create stock counts and update client stock when consignment is created
+    await this.createStockCountsForDeliveredConsignment(consignment.id);
+
+    // Update client stock with consignment items
+    const items = data.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }));
+    await this.clientStockService.processConsignmentDelivery(
+      data.clientId,
+      items
+    );
+
+    return consignment;
   }
 
   async updateConsignment(
-    id: number, 
+    id: number,
     data: Partial<InsertConsignment>
   ): Promise<ConsignmentWithDetails> {
     // Get current consignment to check status change
@@ -53,16 +72,16 @@ export class ConsignmentService {
     await this.consignmentRepository.update(id, data);
 
     // If status changed to "delivered", create stock counts and update client stock
-    if (data.status === "delivered" && currentConsignment.status !== "delivered") {
-      await this.createStockCountsForDeliveredConsignment(id);
-      
-      // Update client stock with delivered items
-      const items = currentConsignment.items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity
-      }));
-      await this.clientStockService.processConsignmentDelivery(currentConsignment.clientId, items);
-    }
+    // if (data.status === "delivered" && currentConsignment.status !== "delivered") {
+    //   await this.createStockCountsForDeliveredConsignment(id);
+
+    //   // Update client stock with delivered items
+    //   const items = currentConsignment.items.map(item => ({
+    //     productId: item.productId,
+    //     quantity: item.quantity
+    //   }));
+    //   await this.clientStockService.processConsignmentDelivery(currentConsignment.clientId, items);
+    // }
 
     // Return updated consignment
     return await this.getConsignmentById(id);
@@ -76,18 +95,21 @@ export class ConsignmentService {
     return await this.consignmentRepository.getTotalConsignedValue();
   }
 
-  private async createStockCountsForDeliveredConsignment(consignmentId: number): Promise<void> {
+  private async createStockCountsForDeliveredConsignment(
+    consignmentId: number
+  ): Promise<void> {
     const consignment = await this.getConsignmentById(consignmentId);
-    
+
     const stockCountsToCreate = [];
 
     for (const item of consignment.items) {
       // Check if stock count already exists for this consignment item
-      const existingStockCounts = await this.stockCountService.getStockCountsByConsignmentAndProduct(
-        consignment.clientId,
-        item.productId,
-        consignmentId
-      );
+      const existingStockCounts =
+        await this.stockCountService.getStockCountsByConsignmentAndProduct(
+          consignment.clientId,
+          item.productId,
+          consignmentId
+        );
 
       // Only create if doesn't exist
       if (existingStockCounts.length === 0) {

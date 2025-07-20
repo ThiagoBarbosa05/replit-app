@@ -1,0 +1,12 @@
+POST http://localhost:5000/api/consignments
+Content-Type: application/json
+
+{
+    "clientId": 7,
+    "items": [{
+      "productId": 3,
+      "quantity": 5,
+      "unitPrice": 129.90
+    }]
+    
+}

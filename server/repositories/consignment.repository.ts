@@ -1,19 +1,23 @@
 import { db } from "../db";
-import { consignments, consignmentItems, clients, products } from "@shared/schema";
+import {
+  consignments,
+  consignmentItems,
+  clients,
+  products,
+} from "@shared/schema";
 import { eq, sql, and, ilike, or, gte, lte } from "drizzle-orm";
-import type { 
-  Consignment, 
-  InsertConsignment, 
+import type {
+  Consignment,
+  InsertConsignment,
   ConsignmentWithDetails,
   ConsignmentItem,
-  InsertConsignmentItem 
+  InsertConsignmentItem,
 } from "@shared/schema";
 
 export class ConsignmentRepository {
   async findAll(
-    searchTerm?: string, 
-    status?: string, 
-    startDate?: string, 
+    searchTerm?: string,
+    startDate?: string,
     endDate?: string,
     clientId?: number
   ): Promise<ConsignmentWithDetails[]> {
@@ -22,7 +26,6 @@ export class ConsignmentRepository {
         id: consignments.id,
         clientId: consignments.clientId,
         date: consignments.date,
-        status: consignments.status,
         totalValue: consignments.totalValue,
         client: clients,
       })
@@ -35,16 +38,8 @@ export class ConsignmentRepository {
     if (searchTerm && searchTerm.trim() !== "") {
       const search = `%${searchTerm.trim()}%`;
       conditions.push(
-        or(
-          ilike(clients.name, search),
-          ilike(clients.cnpj, search)
-        )
+        or(ilike(clients.name, search), ilike(clients.cnpj, search))
       );
-    }
-
-    // Status filter
-    if (status && status !== "all") {
-      conditions.push(eq(consignments.status, status));
     }
 
     // Date range filters
@@ -74,7 +69,6 @@ export class ConsignmentRepository {
           id: row.id,
           clientId: row.clientId,
           date: row.date,
-          status: row.status,
           totalValue: row.totalValue,
           client: row.client!,
           items,
@@ -91,7 +85,6 @@ export class ConsignmentRepository {
         id: consignments.id,
         clientId: consignments.clientId,
         date: consignments.date,
-        status: consignments.status,
         totalValue: consignments.totalValue,
         client: clients,
       })
@@ -107,7 +100,6 @@ export class ConsignmentRepository {
       id: consignmentRow.id,
       clientId: consignmentRow.clientId,
       date: consignmentRow.date,
-      status: consignmentRow.status,
       totalValue: consignmentRow.totalValue,
       client: consignmentRow.client!,
       items,
@@ -140,12 +132,14 @@ export class ConsignmentRepository {
       }));
   }
 
-  async create(data: InsertConsignment & { items: InsertConsignmentItem[] }): Promise<ConsignmentWithDetails> {
+  async create(
+    data: InsertConsignment & { items: InsertConsignmentItem[] }
+  ): Promise<ConsignmentWithDetails> {
     // Calculate total value
     const totalValue = data.items
       .reduce(
         (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
-        0,
+        0
       )
       .toFixed(2);
 
@@ -164,16 +158,20 @@ export class ConsignmentRepository {
         data.items.map((item) => ({
           ...item,
           consignmentId: consignment.id,
-        })),
+        }))
       );
     }
 
     const result = await this.findById(consignment.id);
+
     if (!result) throw new Error("Failed to create consignment");
     return result;
   }
 
-  async update(id: number, data: Partial<InsertConsignment>): Promise<Consignment> {
+  async update(
+    id: number,
+    data: Partial<InsertConsignment>
+  ): Promise<Consignment> {
     const [updated] = await db
       .update(consignments)
       .set(data)
@@ -201,11 +199,13 @@ export class ConsignmentRepository {
         total: sql<string>`COALESCE(SUM(CAST(${consignments.totalValue} AS DECIMAL)), 0)`,
       })
       .from(consignments);
-    
+
     return result.total;
   }
 
-  async getItemsByConsignmentId(consignmentId: number): Promise<ConsignmentItem[]> {
+  async getItemsByConsignmentId(
+    consignmentId: number
+  ): Promise<ConsignmentItem[]> {
     return await db
       .select()
       .from(consignmentItems)
