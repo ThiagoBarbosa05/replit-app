@@ -51,6 +51,16 @@ export const stockCounts = pgTable("stock_counts", {
   totalSold: decimal("total_sold", { precision: 10, scale: 2 }).notNull(),
 });
 
+// Client Stock - Real-time inventory tracking
+export const clientStock = pgTable("client_stock", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull(),
+  productId: integer("product_id").notNull(),
+  quantity: integer("quantity").default(0).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  minimumAlert: integer("minimum_alert").default(5).notNull(), // Alert when stock is below this
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -90,6 +100,11 @@ export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
   totalSold: true,
 });
 
+export const insertClientStockSchema = createInsertSchema(clientStock).omit({
+  id: true,
+  lastUpdated: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -111,6 +126,9 @@ export type InsertConsignmentItem = z.infer<typeof insertConsignmentItemSchema>;
 
 export type StockCount = typeof stockCounts.$inferSelect;
 export type InsertStockCount = z.infer<typeof insertStockCountSchema>;
+
+export type ClientStock = typeof clientStock.$inferSelect;
+export type InsertClientStock = z.infer<typeof insertClientStockSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

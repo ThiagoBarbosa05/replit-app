@@ -1,0 +1,26 @@
+Vamos refazer a parte de consignação, considere o seguinte:
+
+- Controle de estoque onde o cliente vai poder ver a quantidade de vinhos em seu estoque.
+- Gerar alertas se a quantidade estiver muito baixa
+
+Crie uma funcionalidade (CRUD) para consignação de vinhos para cada cliente. Deve ser possível:
+Selecionar o cliente
+Selecionar os produtos (vinhos) enviados
+Quantidade de cada vinho
+Data da consignação
+Sempre que for enviado uma consignação, atualizar a quantidade de vinhos no estoque do cliente.
+
+Crie uma funcionalidade de Contagem, onde será realizada uma contagem dos vinhos em estoque do cliente.
+Quantidade vendida (baseado na diferença entre o que foi enviado e o que está no local)
+Valor total vendido
+Valor total do estoque restante
+Relatórios e Resultados
+Gerar relatórios por cliente, por produto ou por período:
+Sempre que a contagem for realizada, atualizar o estoque do cliente com a quantidade restante.
+Calcular o valor total do estoque restante
+Calcular o faturamento do cliente após a contagem (diferença entre o total contado e o que o cliente tem em estoque)
+
+Relatório de vendas por cliente
+Relatório de estoque atual em cada cliente
+Histórico de consignações
+Lucro obtido (venda vs. valor unitário)

@@ -9,6 +9,7 @@ import ClientsPage from "@/pages/clients-page";
 import ProductsPage from "@/pages/products-page";
 import ConsignmentsPage from "@/pages/consignments-page";
 import InventoryPage from "@/pages/inventory-page";
+import StockPage from "@/pages/stock-page";
 import ReportsPage from "@/pages/reports-page";
 import UsersPage from "@/pages/users-page";
 
@@ -38,6 +39,11 @@ function Router() {
       <Route path="/inventory">
         <MainLayout title="Grand Cru - Inventário" description="Realizar contagem e calcular vendas baseadas no estoque">
           <InventoryPage />
+        </MainLayout>
+      </Route>
+      <Route path="/stock">
+        <MainLayout title="Grand Cru - Estoque" description="Controle de estoque em tempo real com alertas">
+          <StockPage />
         </MainLayout>
       </Route>
       <Route path="/reports">

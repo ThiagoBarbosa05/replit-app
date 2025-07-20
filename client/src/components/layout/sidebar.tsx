@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Wine, BarChart3, Building, Truck, ClipboardList, Users, UserCircle, X } from "lucide-react";
+import { Wine, BarChart3, Building, Truck, ClipboardList, Users, UserCircle, X, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
@@ -15,6 +15,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
     { path: "/products", label: "Produtos", icon: Wine },
     { path: "/consignments", label: "Consignações", icon: Truck },
     { path: "/inventory", label: "Contagem", icon: ClipboardList },
+    { path: "/stock", label: "Estoque", icon: Package },
     { path: "/reports", label: "Relatórios", icon: BarChart3 },
     { path: "/users", label: "Usuários", icon: UserCircle },
   ];

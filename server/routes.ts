@@ -6,6 +6,7 @@ import { ConsignmentController } from "./controllers/consignment.controller";
 import { StockCountController } from "./controllers/stock-count.controller";
 import { DashboardController } from "./controllers/dashboard.controller";
 import { InventoryController } from "./controllers/inventory.controller";
+import { ClientStockController } from "./controllers/client-stock.controller";
 import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -16,6 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const stockCountController = new StockCountController();
   const dashboardController = new DashboardController();
   const inventoryController = new InventoryController();
+  const clientStockController = new ClientStockController();
 
   // Clients routes
   app.get("/api/clients", clientController.getClients);
@@ -53,6 +55,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients/:clientId/inventory", inventoryController.getClientInventory);
   app.get("/api/clients/:clientId/inventory/summary", inventoryController.getClientInventorySummary);
   app.get("/api/reports/current-stock", inventoryController.getCurrentStockReport);
+
+  // Client Stock routes (Real-time inventory)
+  app.get("/api/clients/:clientId/stock", clientStockController.getClientStock);
+  app.get("/api/clients/:clientId/stock/:productId", clientStockController.getProductStock);
+  app.put("/api/clients/:clientId/stock/:productId", clientStockController.updateStock);
+  app.post("/api/clients/:clientId/stock/:productId/count", clientStockController.processStockCount);
+  app.put("/api/clients/:clientId/stock/:productId/alert", clientStockController.setMinimumAlert);
+  app.get("/api/clients/:clientId/stock-value", clientStockController.getTotalStockValue);
+  
+  // Low stock alerts
+  app.get("/api/stock/alerts", clientStockController.getLowStockAlerts);
+  app.get("/api/clients/:clientId/stock/alerts", clientStockController.getLowStockAlerts);
 
   const httpServer = createServer(app);
   return httpServer;

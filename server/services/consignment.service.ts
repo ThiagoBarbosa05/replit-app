@@ -1,5 +1,6 @@
 import { ConsignmentRepository } from "../repositories/consignment.repository";
 import { StockCountService } from "./stock-count.service";
+import { ClientStockService } from "./client-stock.service";
 import type { 
   ConsignmentWithDetails, 
   InsertConsignment, 
@@ -9,10 +10,12 @@ import type {
 export class ConsignmentService {
   private consignmentRepository: ConsignmentRepository;
   private stockCountService: StockCountService;
+  private clientStockService: ClientStockService;
 
   constructor() {
     this.consignmentRepository = new ConsignmentRepository();
     this.stockCountService = new StockCountService();
+    this.clientStockService = new ClientStockService();
   }
 
   async getAllConsignments(
@@ -49,9 +52,16 @@ export class ConsignmentService {
     // Update consignment
     await this.consignmentRepository.update(id, data);
 
-    // If status changed to "delivered", create stock counts for all items
+    // If status changed to "delivered", create stock counts and update client stock
     if (data.status === "delivered" && currentConsignment.status !== "delivered") {
       await this.createStockCountsForDeliveredConsignment(id);
+      
+      // Update client stock with delivered items
+      const items = currentConsignment.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity
+      }));
+      await this.clientStockService.processConsignmentDelivery(currentConsignment.clientId, items);
     }
 
     // Return updated consignment
